@@ -6,30 +6,32 @@
 ;--------------------------------------------------
 {
     ; First time running
-    If !FileExist("TestItem.ini") {
-        ; Attempt to find PoB in open windows
+    global CharacterFileName
+    IniRead, CharacterFileName, TestItem.ini, General, CharacterBuildFileName
+
+    If !CharacterFileName
+        IniWrite, Default.xml, TestItem.ini, General, CharacterBuildFileName
+
+    global PoBPath
+    IniRead, PoBPath, TestItem.ini, General, PathToPoB
+
+    ; If PoBPath hasn't been set yet
+    If !PoBPath {
         WinGet, FullPath, ProcessPath, Path of Building ahk_class SimpleGraphic Class
         If FullPath {
             SplitPath, FullPath, , PoBPath
-            IniWrite, %PoBPath%, TestItem.ini, General, PoB Path
+            IniWrite, %PoBPath%, TestItem.ini, General, PathToPoB
         }
         Else
-            IniWrite, %A_WorkingDir%, TestItem.ini, General, PoB Path
+            IniWrite, %PoBPath%, TestItem.ini, General, PathToPoB
+    }
 
-        ; Generate Default Ini Values
-        IniWrite, Default.xml, TestItem.ini, General, Build Path
+    If !PoBPath {
         MsgBox Check %A_ScriptDir%\TestItem.ini to update your values
         ExitApp, 0
     }
-    Else {
-        global BuildPath
-        global PoBPath
 
-        IniRead, BuildPath, TestItem.ini, General, Build Path
-        IniRead, PoBPath, TestItem.ini, General, PoB Path,
-
-        SetWorkingDir, %PoBPath%
-    }
+    SetWorkingDir, %PoBPath%
 }
 
 ;--------------------------------------------------
@@ -59,7 +61,7 @@ ClipboardChange(ContentType) {
     FileDelete, %A_Temp%\PoBTestItem.txt
     FileAppend, %clipboard%, %A_Temp%\PoBTestItem.txt
 
-    RunWait, "Path of Building.exe" "TestItem.lua" "Builds\%BuildPath%" "%A_Temp%\PoBTestItem.txt"
+    RunWait, "Path of Building.exe" "%A_ScriptDir%\TestItem.lua" "Builds\%CharacterFileName%" "%A_Temp%\PoBTestItem.txt"
 
     DisplayOutput()
 }
