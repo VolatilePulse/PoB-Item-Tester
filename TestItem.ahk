@@ -4,36 +4,54 @@
 ;--------------------------------------------------
 ; Initialization
 ;--------------------------------------------------
-{
-    ; First time running
-    global CharacterFileName
-    IniRead, CharacterFileName, TestItem.ini, General, CharacterBuildFileName
 
-    If !CharacterFileName
-        IniWrite, Default.xml, TestItem.ini, General, CharacterBuildFileName
+global LuaDir = "\ItemTester"
+global BuildDir = "\Builds"
 
-    global PoBPath
-    IniRead, PoBPath, TestItem.ini, General, PathToPoB
+global SourceRepo = "https://raw.githubusercontent.com/VolatilePulse/PoB-Item-Tester/master/"
+global SourceFiles = "TestItem.lua"
+global IniFile = A_ScriptDir . "\TestItem.ini"
 
-    ; If PoBPath hasn't been set yet
-    If !PoBPath {
-        WinGet, FullPath, ProcessPath, Path of Building ahk_class SimpleGraphic Class
-        If FullPath {
-            SplitPath, FullPath, , PoBPath
-            IniWrite, %PoBPath%, TestItem.ini, General, PathToPoB
-        }
-        Else
-            IniWrite, %PoBPath%, TestItem.ini, General, PathToPoB
+global PoBPath, CharacterFileName
+
+IniRead, PoBPath, %IniFile%, General, PathToPoB, %A_Space%
+
+If !PoBPath or !FileExist(PoBPath . "\Path of Building.exe") {
+    SplashTextOn, 200, 30, Initialization, Please launch Path of Building.
+    WinWait, Path of Building ahk_class SimpleGraphic Class, , 300
+    WinGet, FullPath, ProcessPath, Path of Building ahk_class SimpleGraphic Class
+
+    If !FullPath {
+        MsgBox Path of Building not detected. Please relaunch this program and open Path of Building when requested
+        ExitApp, 1
     }
-
-    If !PoBPath {
-        MsgBox Check %A_ScriptDir%\TestItem.ini to update your values
-        ExitApp, 0
-    }
-
-    SetWorkingDir, %PoBPath%
+    SplitPath, FullPath, , PoBPath
+    IniWrite, %PoBPath%, %IniFile%, General, PathToPoB
 }
 
+SetWorkingDir, %PoBPath%
+
+LuaDir = %A_WorkingDir%%LuaDir%
+BuildDir = %A_WorkingDir%%BuildDir%
+
+; Make sure our Lua Directory exists, otherwise create it.
+If FileExist(LuaDir) != "D"
+    FileCreateDir, %LuaDir%
+
+SplashTextOn, 200, 30, Initialization, Updating helper files.
+Sleep, 500
+
+UrlDownloadToFile, %SourceRepo%%SourceFiles%, %LuaDir%\%SourceFiles%
+
+IniRead, CharacterFileName, %IniFile%, General, CharacterBuildFileName, %A_Space%
+
+If !CharacterFileName {
+    IniWrite, Default.xml, %IniFile%, General, CharacterBuildFileName
+}
+
+SplashTextOn, 200, 30, Initialization, Complete!
+Sleep, 1000
+SplashTextOff
 ;--------------------------------------------------
 ; Global Hooks
 ;--------------------------------------------------
@@ -60,8 +78,8 @@ ClipboardChange(ContentType) {
     ; Erase old content first
     FileDelete, %A_Temp%\PoBTestItem.txt
     FileAppend, %clipboard%, %A_Temp%\PoBTestItem.txt
-
-    RunWait, "Path of Building.exe" "%A_ScriptDir%\TestItem.lua" "Builds\%CharacterFileName%" "%A_Temp%\PoBTestItem.txt"
+    
+    RunWait, "Path of Building.exe" "%LuaDir%\TestItem.lua" "%BuildDir%\%CharacterFileName%" "%A_Temp%\PoBTestItem.txt"
 
     DisplayOutput()
 }
