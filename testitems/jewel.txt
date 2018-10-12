@@ -1,0 +1,16 @@
+Rarity: Rare
+Grim Song
+Murderous Eye Jewel
+--------
+Abyss
+--------
+Requirements:
+Level: 30
+--------
+Item Level: 78
+--------
++31 to maximum Life
+Adds 11 to 19 Cold Damage to Staff Attacks
+5% chance to gain Onslaught for 4 seconds on Kill
+--------
+Place into an Abyssal Socket on an Item or into an allocated Jewel Socket on the Passive Skill Tree. Right click to remove from the Socket.

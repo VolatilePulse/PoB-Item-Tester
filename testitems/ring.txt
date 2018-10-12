@@ -1,0 +1,19 @@
+Rarity: Rare
+Woe Coil
+Two-Stone Ring
+--------
+Requirements:
+Level: 57
+--------
+Item Level: 86
+--------
++12% to Fire and Cold Resistances
+--------
+Adds 3 to 4 Physical Damage to Attacks
+15% increased Fire Damage
+11% increased Cold Damage
++63 to maximum Life
++45% to Cold Resistance
+Adds 10 to 20 Fire Damage to Attacks
+--------
+Note: ~price 10 chaos
