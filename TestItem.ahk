@@ -14,7 +14,7 @@ global SourceFiles = ["TestItem.lua", "mockui.lua", "inspect.lua"]
 global IniFile = A_ScriptDir . "\TestItem.ini"
 global LuaJIT = A_ScriptDir . "\bin\luajit.exe"
 
-global DevMode = True, PoBPath, CharacterFileName
+global DevMode = True, PoBPath, CharacterFileName, AccountName, CharacterName
 
 global ItemViewerGUI, ItemViewerControl
 
@@ -34,6 +34,13 @@ Tooltip, , , , 1
 ;--------------------------------------------------
 ; Global Hooks
 ;--------------------------------------------------
+
+; CTRL + SHIFT + ALT + C
++^!c::
+    ; Wait until update has finished
+    ; RunWait, "%LuaJIT%" "%LuaDir%\TestItem.lua" "%BuildDir%\%CharacterFileName%" "%A_Temp%\PoBTestItem.txt", , Hide
+    Send, ^c
+    return;
 
 OnClipboardChange("ClipboardChange")
 OnExit("ExitFunc")
@@ -99,6 +106,13 @@ SetVariablesAndFiles() {
         
         Tooltip, , , , 1
     }
+    ; Move elsewhere later
+    IniRead, AccountName, %IniFile%, CurrentBuild, AccountName, %A_Space%
+    If !AccountName
+        IniWrite, %AccountName%, %IniFile%, CurrentBuild, AccountName
+    IniRead, CharacterName, %IniFile%, CurrentBuild, CharacterName, %A_Space%
+    If !CharacterName
+        IniWrite, %CharacterName%, %IniFile%, CurrentBuild, CharacterName
 
     Gui, ItemViewerGUI:New, , PoB Item Tester
     Gui, ItemViewerGUI:Add, ActiveX, x0 y0 w400 h500 vItemViewerControl, Shell.Explorer
@@ -174,7 +188,7 @@ ClipboardChange(ContentType) {
 }
 
 EnterAccountName() {
-    
+
 }
 
 DisplayOutput() {
@@ -196,8 +210,10 @@ UrlEncode(String) {
 	OldFormat := A_FormatInteger
 	SetFormat, Integer, H
 
-	Loop, Parse, String {
-		if A_LoopField is alnum {
+	Loop, Parse, String
+    {
+		if A_LoopField is alnum
+        {
 			Out .= A_LoopField
 			continue
 		}
