@@ -99,13 +99,13 @@ function GetTime()
     return 0
 end
 function GetScriptPath()
-    return ""
+    return "."
 end
 function GetRuntimePath()
-    return ""
+    return "."
 end
 function GetUserPath()
-    return ""
+    return "."
 end
 function MakeDir(path) end
 function RemoveDir(path) end
@@ -114,6 +114,46 @@ function GetWorkDir()
     return ""
 end
 function LaunchSubScript(scriptText, funcList, subList, ...) end
+
+function DownloadPage(self, url, callback, cookies)
+	-- Download the given page then calls the provided callback function when done:
+    -- callback(pageText, errMsg)
+
+    ConPrintf("Downloading page at: %s", url)
+    local curl = require("lcurl.safe")
+    local page = ""
+    local easy = curl.easy()
+    easy:setopt_url(url)
+    easy:setopt(curl.OPT_ACCEPT_ENCODING, "")
+    if cookies then
+        easy:setopt(curl.OPT_COOKIE, cookies)
+    end
+    if proxyURL then
+        easy:setopt(curl.OPT_PROXY, proxyURL)
+    end
+    easy:setopt_writefunction(function(data)
+        page = page..data
+        return true
+    end)
+    local _, error = easy:perform()
+    local code = easy:getinfo(curl.INFO_RESPONSE_CODE)
+    easy:close()
+    local errMsg
+    if error then
+        errMsg = error:msg()
+    elseif code ~= 200 then
+        errMsg = "Response code: "..code
+    elseif #page == 0 then
+        errMsg = "No data returned"
+    end
+    ConPrintf("Download complete. Status: %s", errMsg or "OK")
+    if errMsg then
+        callback(nil, errMsg)
+    else
+        callback(page, nil)
+    end
+end
+
 function AbortSubScript(ssID) end
 function IsSubScriptRunning(ssID) end
 function LoadModule(fileName, ...)
@@ -160,17 +200,21 @@ function SetProfiling(isEnabled) end
 function Restart() end
 function Exit() end
 
+function isValidString(s, expression)
+    return s and s:match(expression or '%S') and true or false
+end
+
 l_require = require
 function require(name)
-    -- Hack to stop it looking for lcurl, which we don't really need
-    if name == "lcurl.safe" then
-        return
-    end
     return l_require(name)
 end
 
 
 dofile("Launch.lua")
+
+-- Patch some functions
+mainObject.DownloadPage = DownloadPage
+mainObject.CheckForUpdate = function () end
 
 runCallback("OnInit")
 runCallback("OnFrame") -- Need at least one frame for everything to initialise
@@ -201,6 +245,25 @@ function loadBuildFromJSON(getItemsJSON, getPassiveSkillsJSON)
     build.importTab:ImportPassiveTreeAndJewels(getPassiveSkillsJSON, charData)
     -- You now have a build without a correct main skill selected, or any configuration options set
     -- Good luck!
+end
+
+function saveBuildToXml()
+    local xmlText = build:SaveDB("dummy")
+    if not xmlText then
+        print("Failed to prepare save XML")
+        os.exit(1)
+    end
+    return xmlText
+end
+
+function saveText(filename, text)
+    local file = io.open(filename, "w+")
+    if not file then
+        print("Failed to write to output file")
+        os.exit(1)
+    end
+    file:write(text)
+    file:close()
 end
 
 function loadText(fileName)

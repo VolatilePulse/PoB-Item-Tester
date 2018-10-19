@@ -7,11 +7,7 @@ echo Config...
 echo Base : %BASEDIR%
 echo POB  : %POBPATH%
 
-set LUA_PATH=%POBPATH%\lua\?.lua;%POBPATH%\ItemTester\?.lua
-
-echo:
-echo Copying scripts...
-xcopy /YQ ItemTester %POBPATH%\ItemTester\ >NUL
+set LUA_PATH=%POBPATH%\lua\?.lua;%BASEDIR%\ItemTester\?.lua
 
 echo:
 echo Running script...
