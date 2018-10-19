@@ -9,52 +9,55 @@ global LuaDir = "\ItemTester"
 global BuildDir = "\Builds"
 
 global SourceRepo = "https://raw.githubusercontent.com/VolatilePulse/PoB-Item-Tester/master/ItemTester/"
-global SourceFiles = ["TestItem.lua", "mockui.lua", "inspect.lua"]
+global SourceFiles = ["TestItem.lua", "mockui.lua", "inspect.lua", "UpdateBuild.lua"]
 
 global IniFile = A_ScriptDir . "\TestItem.ini"
 global LuaJIT = A_ScriptDir . "\bin\luajit.exe"
 
-global DevMode = True, PoBPath, CharacterFileName, AccountName, CharacterName
+global DevMode = True, PoBPath, CharacterFileName
 
 global ItemViewerGUI, ItemViewerControl
 
-CoordMode, Tooltip, Client
+DetectHiddenWindows, On
 
 GetDevMode(DevMode)
 GetPoBPath(PoBPath)
 SetVariablesAndFiles()
 GetCharacterFileName(CharacterFileName)
 
-winGetActiveStats, winTitle, winWidth, winHeight, winX, winY
-Tooltip, Complete!, (winWidth - 68) / 2, 0, 1 ; 68 x 20h
-
+InfoHwnd := DisplayInformation("Complete!")
 Sleep, 1000
-Tooltip, , , , 1
+Gui, %InfoHwnd%:Destroy
+
+OnClipboardChange("ClipboardChange")
+OnExit("ExitFunc")
+return
 
 ;--------------------------------------------------
 ; Global Hooks
 ;--------------------------------------------------
 
-; CTRL + SHIFT + ALT + C
-+^!c::
-    ; Wait until update has finished
-    ; RunWait, "%LuaJIT%" "%LuaDir%\TestItem.lua" "%BuildDir%\%CharacterFileName%" "%A_Temp%\PoBTestItem.txt", , Hide
-    Send, ^c
-    return;
-
-OnClipboardChange("ClipboardChange")
-OnExit("ExitFunc")
-
 CPListBox:
     if A_GuiControlEvent <> DoubleClick
         return
     Gui, Submit
+    Gui, Destroy
 
 Ok:
     Gui, Submit
+    Gui, Destroy
 
 Cancel:
-    Gui, Hide
+    Gui, Destroy
+
+; CTRL + SHIFT + ALT + C
++^c::
+    ; Wait until update has finished
+    InfoHwnd := DisplayInformation("Updating Character Build")
+    RunWait, "%LuaJIT%" "%LuaDir%\UpdateBuild.lua" "%BuildDir%\%CharacterFileName%", , Hide
+    Gui, %InfoHwnd%:Destroy
+    Send, ^c
+    return
 
 ;--------------------------------------------------
 ; Functions
@@ -70,8 +73,7 @@ GetPoBPath(ByRef PoBPath) {
     IniRead, PoBPath, %IniFile%, General, PathToPoB, %A_Space%
 
     If !PoBPath or !FileExist(PoBPath . "\Path of Building.exe") {
-        winGetActiveStats, winTitle, winWidth, winHeight, winX, winY
-        Tooltip, Please launch Path of Building, (winWidth - 173) / 2, 0, 1 ; 173w x 20h
+        InfoHwnd := DisplayInformation("Please launch Path of Building")
         WinWait, Path of Building ahk_class SimpleGraphic Class, , 300
         WinGet, FullPath, ProcessPath, Path of Building ahk_class SimpleGraphic Class
 
@@ -81,7 +83,7 @@ GetPoBPath(ByRef PoBPath) {
         }
         SplitPath, FullPath, , PoBPath
         IniWrite, %PoBPath%, %IniFile%, General, PathToPoB
-        Tooltip, , , , 1
+        Gui, %InfoHwnd%:Destroy
     }
 }
 
@@ -97,22 +99,14 @@ SetVariablesAndFiles() {
         If FileExist(LuaDir) != "D"
             FileCreateDir, %LuaDir%
 
-        winGetActiveStats, winTitle, winWidth, winHeight, winX, winY
-        Tooltip, Updating helper files, (winWidth - 122) / 2, 0, 1 ; 122w x 20h
+        InfoHwnd := DisplayInformation("Updating helper files")
         Sleep, 500
 
         for index, file in SourceFiles
             UrlDownloadToFile, %SourceRepo%%file%, %LuaDir%\%file%
         
-        Tooltip, , , , 1
+        Gui, %InfoHwnd%:Destroy
     }
-    ; Move elsewhere later
-    IniRead, AccountName, %IniFile%, CurrentBuild, AccountName, %A_Space%
-    If !AccountName
-        IniWrite, %AccountName%, %IniFile%, CurrentBuild, AccountName
-    IniRead, CharacterName, %IniFile%, CurrentBuild, CharacterName, %A_Space%
-    If !CharacterName
-        IniWrite, %CharacterName%, %IniFile%, CurrentBuild, CharacterName
 
     Gui, ItemViewerGUI:New, , PoB Item Tester
     Gui, ItemViewerGUI:Add, ActiveX, x0 y0 w400 h500 vItemViewerControl, Shell.Explorer
@@ -123,7 +117,6 @@ GetCharacterFileName(ByRef CharacterFileName) {
     IniRead, CharacterFileName, %IniFile%, General, CharacterBuildFileName, %A_Space%
 
     If !CharacterFileName or !FileExist(BuildDir . "\" . CharacterFileName) {
-
         entries = 0
         loop Files, %BuildDir%\*.xml
         {
@@ -135,8 +128,7 @@ GetCharacterFileName(ByRef CharacterFileName) {
                 CharacterFileName = %CBFileName%
         }
 
-        Gui, CharacterPicker:New, +HwndCharacterPickerHwnd -Border -Caption
-        ;Gui, CharacterPicker:Color, 828282
+        Gui, CharacterPicker:New, +HwndCharacterPickerHwnd, Pick You Character Build File
         Gui, CharacterPicker:Margin, 20, 20
         Gui, Font, s16
         Gui, CharacterPicker:Add, ListBox, vCharacterFileName gCPListBox r%entries%, %CharacterFileName%
@@ -144,9 +136,6 @@ GetCharacterFileName(ByRef CharacterFileName) {
         Gui, CharacterPicker:Add, Button, Default gOk, Confirm
         Gui, CharacterPicker:Add, Button, X+50 gCancel, Cancel
         Gui, CharacterPicker:Show
-
-        winGetActiveStats, winTitle, winWidth, winHeight, winX, winY
-        Tooltip, Pick Your Character Build, (winWidth - 122) / 2, 0, 1 ; 122w x 20h
 
         WinWait, ahk_id %CharacterPickerHwnd%
         WinWaitClose, ahk_id %CharacterPickerHwnd%
@@ -170,33 +159,44 @@ ClipboardChange(ContentType) {
     If RegExMatch(clipboard, "Rarity: .*?\R.*?\R?.*?\R--------\R.*") = 0
         Return
 
-    If !FileExist(BuildDir . "\" . CharacterFileName) {
+    If !FileExist(BuildDir . "\" . CharacterFileName)
         GetCharacterFileName(CharacterFileName)
-    }
 
-    winGetActiveStats, winTitle, winWidth, winHeight, winX, winY
-    Tooltip, Parsing Item Data..., (winWidth - 115) / 2, 0, 1 ; 115w x 20h
+    InfoHwnd := DisplayInformation("Parsing Item Data...")
     ; Erase old content first
     FileDelete, %A_Temp%\PoBTestItem.txt
     FileAppend, %clipboard%, %A_Temp%\PoBTestItem.txt
     
     RunWait, "%LuaJIT%" "%LuaDir%\TestItem.lua" "%BuildDir%\%CharacterFileName%" "%A_Temp%\PoBTestItem.txt", , Hide
-
-    Tooltip, , , , 1
-
+    Gui, %InfoHwnd%:Destroy
     DisplayOutput()
-}
-
-EnterAccountName() {
-
 }
 
 DisplayOutput() {
     ItemViewerControl.Navigate("file://" . A_Temp . "\PoBTestItem.txt.html")
     while ItemViewerControl.busy or ItemViewerControl.ReadyState != 4
         Sleep 10
-    Gui, ItemViewerGUI:Show, w400 h500
+    WinGetPos, winX, winY, winW, winH, A
+    Gui, ItemViewerGUI:+LastFound
+    Gui, ItemViewerGUI:Show, Hide
+    WinGetPos, , , guiW, guiH
+    MouseGetPos, mouseX, mouseY
+    posX = % ((mouseX > winX + winW / 2) ? (winX + ((winW / 2) - guiW) / 2) : (winX + ((winW / 2) + guiW) / 2))
+    posY = % ((mouseY > winY + winH / 2) ? (winY + ((winH / 2) - guiH) / 2) : (winY + ((winY / 2) + guiH) / 2))
+    Gui, ItemViewerGUI:Show, w400 h500 X%posX% Y%posY%
     return
+}
+
+DisplayInformation(string) {
+    WinGetPos, winX, winY, winW, winH, A
+    Gui, Info:New, +AlwaysOnTop -Border -MaximizeBox -MinimizeBox +LastFound Disabled HwndInfoHwnd
+    Gui, Info:Add, Text, , %string%
+    Gui, Info:Show, Hide
+    WinGetPos, , , guiW, guiH
+    posX = % winX + (winW - guiW) / 2
+    posY = % winY + 50
+    Gui, Info:Show, X%posX% Y%posY%
+    return InfoHwnd
 }
 
 ; Clean up temporary files, if able to
@@ -204,26 +204,6 @@ ExitFunc() {
     FileDelete, %A_Temp%\PoBTestItem.txt
     FileDelete, %A_Temp%\PoBTestItem.txt.html
     return
-}
-
-UrlEncode(String) {
-	OldFormat := A_FormatInteger
-	SetFormat, Integer, H
-
-	Loop, Parse, String
-    {
-		if A_LoopField is alnum
-        {
-			Out .= A_LoopField
-			continue
-		}
-		Hex := SubStr(Asc(A_LoopField), 3)
-		Out .= "%" . (StrLen(Hex) = 1 ? "0" . Hex : Hex)
-	}
-
-	SetFormat, Integer, %OldFormat%
-
-	return Out
 }
 
 /* 
