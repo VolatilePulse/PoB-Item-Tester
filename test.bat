@@ -13,4 +13,4 @@ echo:
 echo Running script...
 
 cd %POBPATH%
-"%LUAJIT%" ItemTester\TestItem.lua "%POBPATH%\Builds\Zivhi.xml" "%BASEDIR%\testitems\ring.txt"
+"%LUAJIT%" %BASEDIR%\ItemTester\TestItem.lua CURRENT "%BASEDIR%\testitems\ring.txt"

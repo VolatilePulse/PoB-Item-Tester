@@ -13,4 +13,4 @@ echo:
 echo Running script...
 
 cd %POBPATH%
-"%LUAJIT%" ItemTester\SearchDPS.lua "%POBPATH%\Builds\Zivhi.xml"
+"%LUAJIT%" %BASEDIR%\ItemTester\SearchDPS.lua CURRENT

@@ -7,12 +7,10 @@ echo Config...
 echo Base : %BASEDIR%
 echo POB  : %POBPATH%
 
-set LUA_PATH=%POBPATH%\lua\?.lua;%POBPATH%\ItemTester\?.lua
+set LUA_PATH=%POBPATH%\lua\?.lua;%BASEDIR%\ItemTester\?.lua
 
 echo:
 echo Running script...
 
 cd %POBPATH%
-REM "%LUAJIT%" ItemTester\UpdateBuild.lua "%POBPATH%\Builds\VolatileLightning.xml"
-REM "%LUAJIT%" ItemTester\UpdateBuild.lua "%POBPATH%\Builds\Zamhi.xml"
-"%LUAJIT%" ItemTester\UpdateBuild.lua "%POBPATH%\Builds\Zivhi.xml"
+"%LUAJIT%" %BASEDIR%\ItemTester\UpdateBuild.lua CURRENT

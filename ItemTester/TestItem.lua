@@ -2,7 +2,8 @@ local BUILD_XML = arg[1]
 local INPUT_FILE = arg[2]
 local OUTPUT_FILE = INPUT_FILE..".html"
 
-dofile("ItemTester/mockui.lua")
+local _,_,SCRIPT_PATH=string.find(arg[0], "(.+[/\\]).-")
+dofile(SCRIPT_PATH.."mockui.lua")
 
 local fileHeader = [[
 <!DOCTYPE html><html><head><style>
@@ -14,9 +15,11 @@ hr { margin: 4px -4px 4px -4px; border: none; border-top: #ffff77 solid 2px }
 </style></head><body>
 ]]
 
--- Load a build file
-local buildXml = loadText(BUILD_XML)
-loadBuildFromXML(buildXml)
+-- Load a specific build file or use the default
+if BUILD_XML ~= "CURRENT" then
+    local buildXml = loadText(BUILD_XML)
+    loadBuildFromXML(buildXml)
+end
 
 -- Load an item from copy data
 local itemText = loadText(INPUT_FILE)

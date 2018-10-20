@@ -13,7 +13,8 @@ if BUILD_XML == nil then
     os.exit(1)
 end
 
-dofile("ItemTester/mockui.lua")
+local _,_,SCRIPT_PATH=string.find(arg[0], "(.+[/\\]).-")
+dofile(SCRIPT_PATH.."mockui.lua")
 
 xml = require("xml")
 inspect = require("inspect")
@@ -70,9 +71,11 @@ modData = {
 }
 
 
--- Load a build file
-local buildXml = loadText(BUILD_XML)
-loadBuildFromXML(buildXml)
+-- Load a specific build file or use the default
+if BUILD_XML ~= "CURRENT" then
+    local buildXml = loadText(BUILD_XML)
+    loadBuildFromXML(buildXml)
+end
 
 -- Get DPS difference for each mod and output
 print('f=function(n,v){document.getElementsByName(n)[0].value=v}')
