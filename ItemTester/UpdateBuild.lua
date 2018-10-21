@@ -148,8 +148,12 @@ end
 
 -- print("Chosen group/skill/sub-skill: "..newGroupName..":"..newActiveSkillName..":"..newPartName)
 
--- -- Save
-local saveXml = saveBuildToXml()
-saveText(BUILD_XML..".new", saveXml)
+-- Save
+if BUILD_XML == "CURRENT" then
+    build:SaveDBFile()
+else
+    local saveXml = saveBuildToXml()
+    saveText(BUILD_XML, saveXml)
+end
 
 print("Success")
