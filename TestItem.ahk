@@ -88,10 +88,11 @@ GetPoBPath(ByRef PoBPath) {
 
 SetVariablesAndFiles() {
     SetWorkingDir, %PoBPath%
-    EnvSet, LUA_PATH, %POBPATH%\lua\?.lua;%A_ScriptDir%\ItemTester\?.lua
 
-    LuaDir = %A_WorkingDir%%LuaDir%
+    LuaDir = %A_ScriptDir%%LuaDir%
     BuildDir = %A_WorkingDir%%BuildDir%
+
+    EnvSet, LUA_PATH, %POBPATH%\lua\?.lua;%LuaDir%\?.lua
 
     If !DevMode {
         ; Make sure our Lua Directory exists, otherwise create it.
