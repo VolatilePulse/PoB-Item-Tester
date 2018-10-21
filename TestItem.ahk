@@ -56,7 +56,6 @@ Cancel:
     InfoHwnd := DisplayInformation("Updating Character Build")
     RunWait, "%LuaJIT%" "%LuaDir%\UpdateBuild.lua" "%BuildDir%\%CharacterFileName%", , Hide
     Gui, %InfoHwnd%:Destroy
-    Send, ^c
     return
 
 ;--------------------------------------------------
@@ -89,7 +88,7 @@ GetPoBPath(ByRef PoBPath) {
 
 SetVariablesAndFiles() {
     SetWorkingDir, %PoBPath%
-    EnvSet, LUA_PATH, %POBPATH%\lua\?.lua;%POBPATH%\ItemTester\?.lua
+    EnvSet, LUA_PATH, %POBPATH%\lua\?.lua;%A_ScriptDir%\ItemTester\?.lua
 
     LuaDir = %A_WorkingDir%%LuaDir%
     BuildDir = %A_WorkingDir%%BuildDir%
@@ -108,7 +107,7 @@ SetVariablesAndFiles() {
         Gui, %InfoHwnd%:Destroy
     }
 
-    Gui, ItemViewerGUI:New, , PoB Item Tester
+    Gui, ItemViewerGUI:New, +AlwaysOnTop, PoB Item Tester
     Gui, ItemViewerGUI:Add, ActiveX, x0 y0 w400 h500 vItemViewerControl, Shell.Explorer
     ItemViewerControl.silent := true
 }
@@ -178,24 +177,24 @@ DisplayOutput() {
         Sleep 10
     WinGetPos, winX, winY, winW, winH, A
     Gui, ItemViewerGUI:+LastFound
-    Gui, ItemViewerGUI:Show, Hide
+    Gui, ItemViewerGUI:Show, Hide NoActivate
     WinGetPos, , , guiW, guiH
     MouseGetPos, mouseX, mouseY
     posX = % ((mouseX > winX + winW / 2) ? (winX + ((winW / 2) - guiW) / 2) : (winX + ((winW / 2) + guiW) / 2))
     posY = % ((mouseY > winY + winH / 2) ? (winY + ((winH / 2) - guiH) / 2) : (winY + ((winY / 2) + guiH) / 2))
-    Gui, ItemViewerGUI:Show, w400 h500 X%posX% Y%posY%
+    Gui, ItemViewerGUI:Show, w400 h500 X%posX% Y%posY% NoActivate
     return
 }
 
 DisplayInformation(string) {
     WinGetPos, winX, winY, winW, winH, A
-    Gui, Info:New, +AlwaysOnTop -Border -MaximizeBox -MinimizeBox +LastFound Disabled HwndInfoHwnd
+    Gui, Info:New, +AlwaysOnTop -Border -MaximizeBox -MinimizeBox +LastFound +Disabled HwndInfoHwnd
     Gui, Info:Add, Text, , %string%
-    Gui, Info:Show, Hide
+    Gui, Info:Show, Hide NoActivate
     WinGetPos, , , guiW, guiH
     posX = % winX + (winW - guiW) / 2
     posY = % winY + 50
-    Gui, Info:Show, X%posX% Y%posY%
+    Gui, Info:Show, X%posX% Y%posY% NoActivate
     return InfoHwnd
 }
 
