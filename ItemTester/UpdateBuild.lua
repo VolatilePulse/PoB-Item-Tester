@@ -35,6 +35,7 @@ local pickedActiveSkillName = activeEffect.grantedEffect.name
 local pickedPartIndex = activeEffect.grantedEffect.parts and activeEffect.srcInstance.skillPart
 local pickedPartName = activeEffect.grantedEffect.parts and activeEffect.grantedEffect.parts[pickedPartIndex].name
 
+print("Updating: "..build.buildName)
 print("Current group/skill/sub-skill: "..pickedGroupName..":"..pickedActiveSkillName..":"..(pickedPartName or '-'))
 
 
