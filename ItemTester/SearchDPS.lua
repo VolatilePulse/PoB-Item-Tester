@@ -38,36 +38,46 @@ function findModEffect(modLine)
 end
 
 modData = {
-    { id="flat accuracy", scale="100", text="+100 to Accuracy Rating" },
-    { id="% accuracy", scale="10", text="10% increased Global Accuracy Rating" },
-    { id="% physical", scale="12", text="12% increased Physical Damage" },
-    { id="% lightning", scale="12", text="12% increased Lightning Damage" },
-    { id="% cold", scale="12", text="12% increased Cold Damage" },
-    { id="% fire", scale="12", text="12% increased Fire Damage" },
-    { id="% elemental", scale="12", text="12% increased Elemental Damage" },
-    { id="% chaos", scale="12", text="12% increased Chaos Damage" },
-    { id="% generic", scale="12", text="12% increased Damage" },
-    { id="crit chance", scale="16", text="16% increased Global Critical Strike Chance" },
-    { id="crit multi", scale="16", text="+16% to Global Critical Strike Multiplier" },
-    { id="attack speed", scale="10", text="10% increased Attack Speed" },
-    { id="cast speed", scale="10", text="10% increased Cast Speed" },
-    { id="pen all", scale="8", text="Damage Penetrates 8% Elemental Resistances" },
-    { id="pen lightning", scale="8", text="Damage Penetrates 8% Lightning Resistance" },
-    { id="pen cold", scale="8", text="Damage Penetrates 8% Cold Resistance" },
-    { id="pen fire", scale="8", text="Damage Penetrates 8% Fire Resistance" },
-    { id="flat phys", scale="6", text="Adds 5 to 7 Physical Damage" },
-    { id="flat lightning", scale="37", text="Adds 6 to 68 Lightning Damage" },
-    { id="flat cold", scale="22.5", text="Adds 14 to 31 Cold Damage" },
-    { id="flat fire", scale="27.5", text="Adds 21 to 34 Fire Damage" },
-    { id="flat chaos", scale="5.5", text="Adds 4 to 7 Chaos Damage" },
-    { id="extra lightning", scale="15", text="15% of Physical Damage as Extra Lightning Damage" },
-    { id="extra cold", scale="15", text="15% of Physical Damage as Extra Cold Damage" },
-    { id="extra fire", scale="15", text="15% of Physical Damage as Extra Fire Damage" },
-    { id="extra chaos", scale="15", text="Gain 15% of Non-Chaos damage as Extra Chaos Damage" },
-    { id="ele as chaos", scale="15", text="Gain 15% of Elemental Damage as Extra Chaos Damage" },
-    { id="+1 power charge", scale="1", text="+1 to Maximum Power Charges" },
-    { id="+1 frenzy charge", scale="1", text="+1 to Maximum Frenzy Charges" },
-    { id="+1 endurance charge", scale="1", text="+1 to Maximum Endurance Charges" },
+    {name="flat accuracy", desc="+100 to Accuracy Rating", count=100},
+    {name="% accuracy", desc="10% increased Global Accuracy Rating", count=10},
+    {name="% physical", desc="12% increased Physical Damage", count=12},
+    {name="% lightning", desc="12% increased Lightning Damage", count=12},
+    {name="% cold", desc="12% increased Cold Damage", count=12},
+    {name="% fire", desc="12% increased Fire Damage", count=12},
+    {name="% elemental", desc="12% increased Elemental Damage", count=12},
+    {name="% chaos", desc="12% increased Chaos Damage", count=12},
+    {name="% generic", desc="12% increased Damage", count=12},
+    {name="crit chance", desc="16% increased Global Critical Strike Chance", count=16},
+    {name="crit multi", desc="+16% to Global Critical Strike Multiplier", count=16},
+    {name="attack speed", desc="10% increased Attack Speed", count=10},
+    {name="cast speed", desc="10% increased Cast Speed", count=10},
+    {name="pen all", desc="Damage Penetrates 8% Elemental Resistances", count=8},
+    {name="pen lightning", desc="Damage Penetrates 8% Lightning Resistance", count=8},
+    {name="pen cold", desc="Damage Penetrates 8% Cold Resistance", count=8},
+    {name="pen fire", desc="Damage Penetrates 8% Fire Resistance", count=8},
+    {name="flat phys", desc="Adds 5 to 7 Physical Damage", count=6},
+    {name="flat lightning", desc="Adds 6 to 68 Lightning Damage", count=37},
+    {name="flat cold", desc="Adds 14 to 31 Cold Damage", count=22.5},
+    {name="flat fire", desc="Adds 21 to 34 Fire Damage", count=27.5},
+    {name="flat chaos", desc="Adds 4 to 7 Chaos Damage", count=5.5},
+    {name="extra lightning", desc="15% of Physical Damage as Extra Lightning Damage", count=15},
+    {name="extra cold", desc="15% of Physical Damage as Extra Cold Damage", count=15},
+    {name="extra fire", desc="15% of Physical Damage as Extra Fire Damage", count=15},
+    {name="extra chaos", desc="Gain 15% of Non-Chaos damage as Extra Chaos Damage", count=15},
+    {name="ele as chaos", desc="Gain 15% of Elemental Damage as Extra Chaos Damage", count=15},
+    {name="+1 power charge", desc="+1 to Maximum Power Charges", count=1},
+    {name="+1 frenzy charge", desc="+1 to Maximum Frenzy Charges", count=1},
+    {name="+1 endurance charge", desc="+1 to Maximum Endurance Charges", count=1},
+    {name="20 dex", desc="20 to Dexterity", count=20},
+    {name="20 int", desc="20 to Intelligence", count=20},
+    {name="20 str", desc="20 to Strength", count=20},
+    {name="damage per dex", desc="1% increased Damage per 15 Dexterity", count=1},
+    {name="damage per int", desc="1% increased Damage per 15 Intelligence", count=1},
+    {name="damage per str", desc="1% increased Damage per 15 Strength", count=1},
+    {name="% dex", desc="10% Dexterity", count=10},
+    {name="% int", desc="10% Intelligence", count=10},
+    {name="% str", desc="10% Strength", count=10},
+    {name="% lowest", desc="1% increased Damage per 5 of your lowest Attribute", count=1}
 }
 
 
@@ -77,11 +87,27 @@ if BUILD_XML ~= "CURRENT" then
     loadBuildFromXML(buildXml)
 end
 
+-- Gather chosen skill and part
+local pickedGroupIndex = build.mainSocketGroup
+local socketGroup = build.skillsTab.socketGroupList[pickedGroupIndex]
+local pickedGroupName = socketGroup.displayLabel
+local pickedActiveSkillIndex = socketGroup.mainActiveSkill
+local displaySkill = socketGroup.displaySkillList[pickedActiveSkillIndex]
+local activeEffect = displaySkill.activeEffect
+local pickedActiveSkillName = activeEffect.grantedEffect.name
+local pickedPartIndex = activeEffect.grantedEffect.parts and activeEffect.srcInstance.skillPart
+local pickedPartName = activeEffect.grantedEffect.parts and activeEffect.grantedEffect.parts[pickedPartIndex].name
+
+print("Character: "..build.buildName)
+print("Current skill group/gem/part: "..pickedGroupName.." / "..pickedActiveSkillName.." / "..(pickedPartName or '-'))
+print()
+
 -- Get DPS difference for each mod and output
+print('Paste this into developer console:')
+print()
 print('f=function(n,v){document.getElementsByName(n)[0].value=v}')
-local modEffects = {}
 for _,mod in ipairs(modData) do
-    local dps = findModEffect(mod.text)
-    -- dps = dps / tonumber(mod.scale) -- only needed if inputting to the original Python script
-    print(string.format("f('%s','%.1f')", mod.id, dps))
+    local dps = findModEffect(mod.desc)
+    -- dps = dps / tonumber(mod.count) -- only needed if inputting to the original Python script
+    print(string.format("f('%s','%.1f')", mod.name, dps))
 end
