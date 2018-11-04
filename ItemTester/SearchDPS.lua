@@ -80,6 +80,18 @@ modData = {
     {name="% lowest", desc="1% increased Damage per 5 of your lowest Attribute", count=1}
 }
 
+function char_to_hex(c)
+    return string.format("%%%02X", string.byte(c))
+end
+
+function urlencode(url)
+    if url == nil then
+        return
+    end
+    url = url:gsub("([^%w])", char_to_hex)
+    return url
+end
+
 
 -- Load a specific build file or use the default
 if BUILD_XML ~= "CURRENT" then
@@ -103,11 +115,12 @@ print("Current skill group/gem/part: "..pickedGroupName.." / "..pickedActiveSkil
 print()
 
 -- Get DPS difference for each mod and output
-print('Paste this into developer console:')
-print()
-print('f=function(n,v){document.getElementsByName(n)[0].value=v}')
+url = 'http://gw2crafts.net/pobsearch/modsearch.html?'
 for _,mod in ipairs(modData) do
     local dps = findModEffect(mod.desc)
     -- dps = dps / tonumber(mod.count) -- only needed if inputting to the original Python script
-    print(string.format("f('%s','%.1f')", mod.name, dps))
+    url = url .. string.format("%s=%.1f&", urlencode(mod.name), dps)
 end
+
+print(url)
+os.execute('start "" "' .. url .. '"')
