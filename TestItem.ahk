@@ -29,7 +29,7 @@ InfoHwnd := DisplayInformation("Complete!")
 Sleep, 1000
 Gui, %InfoHwnd%:Destroy
 
-OnClipboardChange("ClipboardChange")
+; OnClipboardChange("ClipboardChange")
 OnExit("ExitFunc")
 return
 
@@ -50,13 +50,23 @@ Ok:
 Cancel:
     Gui, Destroy
 
-; CTRL + SHIFT + ALT + C
-+^c::
-    ; Wait until update has finished
+; Re-import build (update)
++^u::
     InfoHwnd := DisplayInformation("Updating Character Build")
     RunWait, "%LuaJIT%" "%LuaDir%\UpdateBuild.lua" "%BuildDir%\%CharacterFileName%", , Hide
     Gui, %InfoHwnd%:Destroy
     return
+
+; Test item from clipboard
+^#c::
+    TestItemFromClipboard(false)
+    return
+
+; Test item fom clipboard with character picker
+^#!c::
+    TestItemFromClipboard(true)
+    return
+
 
 ;--------------------------------------------------
 ; Functions
@@ -104,7 +114,7 @@ SetVariablesAndFiles() {
 
         for index, file in SourceFiles
             UrlDownloadToFile, %SourceRepo%%file%, %LuaDir%\%file%
-        
+
         Gui, %InfoHwnd%:Destroy
     }
 
@@ -113,10 +123,12 @@ SetVariablesAndFiles() {
     ItemViewerControl.silent := true
 }
 
-GetCharacterFileName(ByRef CharacterFileName) {
-    IniRead, CharacterFileName, %IniFile%, General, CharacterBuildFileName, %A_Space%
+GetCharacterFileName(ByRef CharacterFileName, force:=false) {
+    if !force {
+        IniRead, CharacterFileName, %IniFile%, General, CharacterBuildFileName, %A_Space%
+    }
 
-    If !CharacterFileName or !FileExist(BuildDir . "\" . CharacterFileName) {
+    If force or !CharacterFileName or !FileExist(BuildDir . "\" . CharacterFileName) {
         entries = 0
         loop Files, %BuildDir%\*.xml
         {
@@ -139,7 +151,7 @@ GetCharacterFileName(ByRef CharacterFileName) {
 
         WinWait, ahk_id %CharacterPickerHwnd%
         WinWaitClose, ahk_id %CharacterPickerHwnd%
-        
+
         if !CharacterFileName or !FileExist(BuildDir . "\" . CharacterFileName . ".xml"){
             MsgBox, You didn't select a Character file. Relaunch program to start again.
             ExitApp, 1
@@ -151,25 +163,33 @@ GetCharacterFileName(ByRef CharacterFileName) {
     }
 }
 
-ClipboardChange(ContentType) {
-    If ContentType != 1
-        Return
-
+TestItemFromClipboard(showPicker) {
     ; Verify the information is what we're looking for
-    If RegExMatch(clipboard, "Rarity: .*?\R.*?\R?.*?\R--------\R.*") = 0
+    If RegExMatch(clipboard, "Rarity: .*?\R.*?\R?.*?\R--------\R.*") = 0 {
+        MsgBox "Not a PoE item"
         Return
+    }
 
-    If !FileExist(BuildDir . "\" . CharacterFileName)
-        GetCharacterFileName(CharacterFileName)
+    If showPicker || !FileExist(BuildDir . "\" . CharacterFileName) {
+        GetCharacterFileName(CharacterFileName, true)
+    }
 
     InfoHwnd := DisplayInformation("Parsing Item Data...")
     ; Erase old content first
     FileDelete, %A_Temp%\PoBTestItem.txt
     FileAppend, %clipboard%, %A_Temp%\PoBTestItem.txt
-    
+
     RunWait, "%LuaJIT%" "%LuaDir%\TestItem.lua" "%BuildDir%\%CharacterFileName%" "%A_Temp%\PoBTestItem.txt", , Hide
     Gui, %InfoHwnd%:Destroy
     DisplayOutput()
+
+}
+
+ClipboardChange(ContentType) {
+    If ContentType != 1
+        Return
+
+    TestItemFromClipboard(false)
 }
 
 DisplayOutput() {
@@ -206,7 +226,7 @@ ExitFunc() {
     return
 }
 
-/* 
+/*
 ;--------------------------------------------------
 ; Window Detection
 ;--------------------------------------------------
