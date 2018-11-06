@@ -3,6 +3,7 @@
 -- It can be run using a standard lua interpreter, although LuaJIT is preferable
 
 t_insert = table.insert
+t_remove = table.remove
 m_min = math.min
 m_max = math.max
 m_floor = math.floor

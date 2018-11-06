@@ -1,9 +1,7 @@
 HELP = [[
-    To use this tool:
+    Use the AHK script with hotkey Ctrl-Windows-D.
 
-    1) Ensure you have saved your build in PoB.
-    2) On the command-line run: "Path of Building.exe" ItemTester\SearchDPS.lua Builds\<buildname>.xml
-    3) Take the output and paste it into the JavaScript console (F12) of http://gw2crafts.net/pobsearch/modsearch.html.
+    See testdps.bat for an example of running it directly.
 ]]
 
 
@@ -21,13 +19,17 @@ inspect = require("inspect")
 
 
 function findModEffect(modLine)
-    -- Construct flask with the mod
-    local itemText = "Test Item\nAmethyst Flask\n"..modLine
+    -- Construct an empty passive socket node to test in
+    local testNode = {id="temporary-test-node", type="Socket", alloc=false, sd={"Temp Test Socket"}, modList={}}
+
+    -- Construct jewel with the mod just to use its mods in the passive node
+    local itemText = "Test Jewel\nMurderous Eye Jewel\n"..modLine
     local item = common.New("Item", build.targetVersion, itemText)
+    testNode.modList = item.modList
 
     -- Calculate stat differences
     local calcFunc, baseStats = build.calcsTab:GetMiscCalculator()
-    local newStats = calcFunc({ toggleFlask = item })
+    local newStats = calcFunc({ addNodes={ [testNode]=true } })
 
     -- Pull out the difference in Total DPS
     local statVal1 = newStats.TotalDPS or newStats.AverageHit or 0
@@ -68,15 +70,15 @@ modData = {
     {name="+1 power charge", desc="+1 to Maximum Power Charges", count=1},
     {name="+1 frenzy charge", desc="+1 to Maximum Frenzy Charges", count=1},
     {name="+1 endurance charge", desc="+1 to Maximum Endurance Charges", count=1},
-    {name="20 dex", desc="20 to Dexterity", count=20},
-    {name="20 int", desc="20 to Intelligence", count=20},
-    {name="20 str", desc="20 to Strength", count=20},
+    {name="20 dex", desc="+20 to Dexterity", count=20},
+    {name="20 int", desc="+20 to Intelligence", count=20},
+    {name="20 str", desc="+20 to Strength", count=20},
     {name="damage per dex", desc="1% increased Damage per 15 Dexterity", count=1},
     {name="damage per int", desc="1% increased Damage per 15 Intelligence", count=1},
     {name="damage per str", desc="1% increased Damage per 15 Strength", count=1},
-    {name="% dex", desc="10% Dexterity", count=10},
-    {name="% int", desc="10% Intelligence", count=10},
-    {name="% str", desc="10% Strength", count=10},
+    {name="% dex", desc="+10% Dexterity", count=10},
+    {name="% int", desc="+10% Intelligence", count=10},
+    {name="% str", desc="+10% Strength", count=10},
     {name="% lowest", desc="1% increased Damage per 5 of your lowest Attribute", count=1}
 }
 
@@ -120,6 +122,7 @@ for _,mod in ipairs(modData) do
     local dps = findModEffect(mod.desc)
     -- dps = dps / tonumber(mod.count) -- only needed if inputting to the original Python script
     url = url .. string.format("%s=%.1f&", urlencode(mod.name), dps)
+    -- print(string.format("%s = %.1f", mod.desc, dps))
 end
 
 print(url)
