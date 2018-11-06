@@ -1,2 +1,3 @@
 *.ini
 testitems/*.html
+*.code-workspace

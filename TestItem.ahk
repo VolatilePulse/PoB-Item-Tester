@@ -67,6 +67,16 @@ Cancel:
     TestItemFromClipboard(true)
     return
 
+; Generate DPS search
+^#d::
+    GenerateDPSSearch(false)
+    return
+
+; Generate DPS search with character picker
+^#!d::
+    GenerateDPSSearch(true)
+    return
+
 
 ;--------------------------------------------------
 ; Functions
@@ -182,7 +192,14 @@ TestItemFromClipboard(showPicker) {
     RunWait, "%LuaJIT%" "%LuaDir%\TestItem.lua" "%BuildDir%\%CharacterFileName%" "%A_Temp%\PoBTestItem.txt", , Hide
     Gui, %InfoHwnd%:Destroy
     DisplayOutput()
+}
 
+GenerateDPSSearch(showPicker) {
+    If showPicker || !FileExist(BuildDir . "\" . CharacterFileName) {
+        GetCharacterFileName(CharacterFileName, true)
+    }
+
+    RunWait, "%LuaJIT%" "%LuaDir%\SearchDPS.lua" "%BuildDir%\%CharacterFileName%", , Hide
 }
 
 ClipboardChange(ContentType) {
