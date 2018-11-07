@@ -17,10 +17,20 @@ dofile(SCRIPT_PATH.."mockui.lua")
 xml = require("xml")
 inspect = require("inspect")
 
-function findRelevantStat()
+
+function findRelevantStat(activeEffect)
     local calcFunc, stats = build.calcsTab:GetMiscCalculator()
-    if (stats['CombinedDPS']) then return 'CombinedDPS' end
+
+    local useAverage = false
+    for _,mod in ipairs(activeEffect.grantedEffect.baseMods) do
+        if mod.value and type(mod.value) == "table" and mod.value.key == "showAverage" and mod.value.value == true then
+            useAverage = true
+        end
+    end
+
+    if (stats['CombinedDPS']) and not useAverage then return 'CombinedDPS' end
     if (stats['AverageHit']) then return 'AverageHit' end
+
     print("Don't know how to deal with this build's damage output type")
     os.exit(1)
 end
@@ -45,6 +55,19 @@ function findModEffect(modLine, statField)
 
     return diff
 end
+
+function char_to_hex(c)
+    return string.format("%%%02X", string.byte(c))
+end
+
+function urlencode(url)
+    if url == nil then
+        return
+    end
+    url = url:gsub("([^%w])", char_to_hex)
+    return url
+end
+
 
 modData = {
     {name="flat accuracy", desc="+100 to Accuracy Rating", count=100},
@@ -89,18 +112,6 @@ modData = {
     {name="% lowest", desc="1% increased Damage per 5 of your lowest Attribute", count=1}
 }
 
-function char_to_hex(c)
-    return string.format("%%%02X", string.byte(c))
-end
-
-function urlencode(url)
-    if url == nil then
-        return
-    end
-    url = url:gsub("([^%w])", char_to_hex)
-    return url
-end
-
 
 -- Load a specific build file or use the default
 if BUILD_XML ~= "CURRENT" then
@@ -123,12 +134,12 @@ print("Character: "..build.buildName)
 print("Current skill group/gem/part: "..pickedGroupName.." / "..pickedActiveSkillName.." / "..(pickedPartName or '-'))
 
 -- Work out which field to use to report damage: CombinedDPS / AverageHit
-local statField = findRelevantStat()
+local statField = findRelevantStat(activeEffect)
 print("Using stat: " .. statField)
 print()
 
 -- Setup the main actor for gathering data
-env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
+local env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
 
 -- Get DPS difference for each mod
 url = 'http://gw2crafts.net/pobsearch/modsearch.html?'
@@ -154,8 +165,8 @@ for skillType,_ in pairs(env.player.mainSkill.skillTypes) do
                 name = name:sub(0, #name-5)
             elseif name:match("Causes.+") then
                 name = name:sub(7)
-            elseif name == "ProjectileAttack" then
-                name = "Projectile"
+            elseif name:match(".+Attack") then
+                name = name:sub(0, #name-6)
             end
             if name then flags[name] = true end
         end
@@ -212,8 +223,7 @@ if flags.Fire or flags.Cold or flags.Lightning then flags.Elemental = true end
 -- Add flags to URL
 for flag,_ in pairs(flags) do
     url = url .. urlencode(flag) .. "=True&"
-    print(flag)
 end
 
 print(url)
--- os.execute('start "" "' .. url .. '"')
+os.execute('start "" "' .. url .. '"')
