@@ -8,28 +8,25 @@
 global LuaDir = "\ItemTester"
 global BuildDir = "\Builds"
 
-global SourceRepo = "https://raw.githubusercontent.com/VolatilePulse/PoB-Item-Tester/master/ItemTester/"
-global SourceFiles = ["TestItem.lua", "mockui.lua", "inspect.lua", "UpdateBuild.lua"]
-
 global IniFile = A_ScriptDir . "\TestItem.ini"
 global LuaJIT = A_ScriptDir . "\bin\luajit.exe"
 
-global DevMode = True, PoBPath, CharacterFileName
+global PoBPath, CharacterFileName
 
-global ItemViewerGUI, ItemViewerControl
+global InfoWindowGUI, InfoTextCtrl, InfoWindowHwnd
+global CharacterPickerGUI, CharacterCurrentCtrl, CharacterListCtrl, CharacterUpdateCtrl, CharacterChangeCtrl, CharacterPickerHwnd
+global ItemViewerGUI, ItemViewerCtrl, ItemViewerHwnd
 
 DetectHiddenWindows, On
 
-GetDevMode(DevMode)
-GetPoBPath(PoBPath)
+CreateGUI()
 SetVariablesAndFiles()
-GetCharacterFileName(CharacterFileName)
 
-InfoHwnd := DisplayInformation("Complete!")
+DisplayInformation("Complete!")
 Sleep, 1000
-Gui, %InfoHwnd%:Destroy
+DisplayInformation()
 
-; OnClipboardChange("ClipboardChange")
+; Register the function to call on script exit
 OnExit("ExitFunc")
 return
 
@@ -37,266 +34,256 @@ return
 ; Global Hooks
 ;--------------------------------------------------
 
+CPCurrentCheck:
+    GuiControlGet, isChecked, , CharacterCurrentCtrl
+    if (isChecked)
+        GuiControl, CharacterPickerGUI: +Disabled, CharacterListCtrl
+    else
+        GuiControl, CharacterPickerGUI: -Disabled, CharacterListCtrl
+    return
+
 CPListBox:
-    if A_GuiControlEvent <> DoubleClick
-        return
-    Gui, Submit
-    Gui, Destroy
+    if (A_GuiControlEvent = "DoubleClick")
+        Gui, Submit
+    return
 
 Ok:
     Gui, Submit
-    Gui, Destroy
-
-Cancel:
-    Gui, Destroy
+    return
 
 ; Re-import build (update)
 +^u::
-    InfoHwnd := DisplayInformation("Updating Character Build")
-    RunWait, "%LuaJIT%" "%LuaDir%\UpdateBuild.lua" "%BuildDir%\%CharacterFileName%", , Hide
-    Gui, %InfoHwnd%:Destroy
+    UpdateCharacterBuild()
     return
 
 ; Test item from clipboard
 ^#c::
-    TestItemFromClipboard(false)
+    TestItemFromClipboard()
     return
 
 ; Test item fom clipboard with character picker
 ^#!c::
-    TestItemFromClipboard(true)
+    DisplayCharacterPicker("TestItemFromClipboard")
     return
 
 ; Generate DPS search
 ^#d::
-    GenerateDPSSearch(false)
+    GenerateDPSSearch()
     return
 
 ; Generate DPS search with character picker
 ^#!d::
-    GenerateDPSSearch(true)
+    DisplayCharacterPicker("GenerateDPSSearch")
     return
-
 
 ;--------------------------------------------------
 ; Functions
 ;--------------------------------------------------
 
-GetDevMode(ByRef DevMode) {
-    IniRead, DevMode, %IniFile%, General, EnableDevMode, %DevMode%
-    If DevMode
-        IniWrite, %DevMode%, %IniFile%, General, EnableDevMode
-}
+; Defines GUI layouts and forces Windows to render the GUI layouts
+CreateGUI() {
+    ; Information Window
+    Gui, InfoWindowGUI:New, +AlwaysOnTop -Border -MaximizeBox -MinimizeBox +LastFound +Disabled +HwndInfoWindowHwnd
+    Gui, InfoWindowGUI:Add, Text, vInfoTextCtrl Center, Please launch Path of Building ; Default control width
+    Gui, InfoWindowGUI:Show, NoActivate Hide
 
-GetPoBPath(ByRef PoBPath) {
-    IniRead, PoBPath, %IniFile%, General, PathToPoB, %A_Space%
+    ; Character Picker
+    Gui, CharacterPickerGUI:New, +HwndCharacterPickerHwnd, Pick You Character Build File
+    ;Gui, CharacterPickerGUI:Margin, 20, 20
+    Gui, CharacterPickerGUI:Add, Checkbox, vCharacterCurrentCtrl gCPCurrentCheck, Use PoB's last used build (since it last closed)
+    Gui, Font, s16
+    Gui, CharacterPickerGUI:Add, ListBox, vCharacterListCtrl gCPListBox r5, %CharacterFileName%
+    Gui, Font, s10
+    Gui, CharacterPickerGUI:Add, Checkbox, vCharacterUpdateCtrl Checked, Update Build before continuing
+    Gui, CharacterPickerGUI:Add, Checkbox, vCharacterChangeCtrl Checked, Make this the default Build
+    Gui, CharacterPickerGUI:Add, Button, Default w50 gOK, OK
+    Gui, CharacterPickerGUI:Show, NoActivate Hide
 
-    If !PoBPath or !FileExist(PoBPath . "\Path of Building.exe") {
-        InfoHwnd := DisplayInformation("Please launch Path of Building")
-        WinWait, Path of Building ahk_class SimpleGraphic Class, , 300
-        WinGet, FullPath, ProcessPath, Path of Building ahk_class SimpleGraphic Class
-
-        If !FullPath {
-            MsgBox Path of Building not detected. Please relaunch this program and open Path of Building when requested
-            ExitApp, 1
-        }
-        SplitPath, FullPath, , PoBPath
-        IniWrite, %PoBPath%, %IniFile%, General, PathToPoB
-        Gui, %InfoHwnd%:Destroy
-    }
+    ; Item Viewer
+    Gui, ItemViewerGUI:New, +AlwaysOnTop +HwndItemViewerHwnd, PoB Item Tester
+    Gui, ItemViewerGUI:Add, ActiveX, x0 y0 w400 h500 vItemViewerCtrl, Shell.Explorer
+    ItemViewerCtrl.silent := True
+    Gui, ItemViewerGUI:Show, NoActivate Hide
 }
 
 SetVariablesAndFiles() {
+    IniRead, PoBPath, %IniFile%, General, PathToPoB, %A_Space%
+    IniRead, CharacterFileName, %IniFile%, General, CharacterBuildFileName, %A_Space%
+
+    ; Make sure PoB hasn't moved
+    GetPoBPath()
+
     SetWorkingDir, %PoBPath%
 
     LuaDir = %A_ScriptDir%%LuaDir%
     BuildDir = %A_WorkingDir%%BuildDir%
-
     EnvSet, LUA_PATH, %POBPATH%\lua\?.lua;%LuaDir%\?.lua
 
-    If !DevMode {
-        ; Make sure our Lua Directory exists, otherwise create it.
-        If FileExist(LuaDir) != "D"
-            FileCreateDir, %LuaDir%
-
-        InfoHwnd := DisplayInformation("Updating helper files")
-        Sleep, 500
-
-        for index, file in SourceFiles
-            UrlDownloadToFile, %SourceRepo%%file%, %LuaDir%\%file%
-
-        Gui, %InfoHwnd%:Destroy
-    }
-
-    Gui, ItemViewerGUI:New, +AlwaysOnTop, PoB Item Tester
-    Gui, ItemViewerGUI:Add, ActiveX, x0 y0 w400 h500 vItemViewerControl, Shell.Explorer
-    ItemViewerControl.silent := true
+    ; Make sure the Character file still exists
+    if (CharacterFileName <> "CURRENT" and !(CharacterFileName and FileExist(BuildDir . "\" . CharacterFileName)))
+        DisplayCharacterPicker()
 }
 
-GetCharacterFileName(ByRef CharacterFileName, force:=false) {
-    if !force {
-        IniRead, CharacterFileName, %IniFile%, General, CharacterBuildFileName, %A_Space%
-    }
+GetPoBPath() {
+    if !PoBPath or !FileExist(PoBPath . "\Path of Building.exe") {
+        if (!WinExist("Path of Building ahk_class SimpleGraphic Class"))
+            DisplayInformation("Please launch Path of Building")
+        WinWait, Path of Building ahk_class SimpleGraphic Class, , 300
+        WinGet, FullPath, ProcessPath, Path of Building ahk_class SimpleGraphic Class
 
-    If force or !CharacterFileName or !FileExist(BuildDir . "\" . CharacterFileName) {
-        entries = 0
-        loop Files, %BuildDir%\*.xml
-        {
-            entries ++
-            SplitPath, A_LoopFileName, , , , CBFileName
-            if A_Index != 1
-                CharacterFileName = %CharacterFileName%|%CBFileName%
-            else
-                CharacterFileName = %CBFileName%
-        }
-
-        Gui, CharacterPicker:New, +HwndCharacterPickerHwnd, Pick You Character Build File
-        Gui, CharacterPicker:Margin, 20, 20
-        Gui, Font, s16
-        Gui, CharacterPicker:Add, ListBox, vCharacterFileName gCPListBox r%entries%, %CharacterFileName%
-        Gui, Font, s10
-        Gui, CharacterPicker:Add, Button, Default gOk, Confirm
-        Gui, CharacterPicker:Add, Button, X+50 gCancel, Cancel
-        Gui, CharacterPicker:Show
-
-        WinWait, ahk_id %CharacterPickerHwnd%
-        WinWaitClose, ahk_id %CharacterPickerHwnd%
-
-        if !CharacterFileName or !FileExist(BuildDir . "\" . CharacterFileName . ".xml"){
-            MsgBox, You didn't select a Character file. Relaunch program to start again.
+        if !FullPath {
+            MsgBox Path of Building not detected. Please relaunch this program and open Path of Building when requested
             ExitApp, 1
         }
-
-        CharacterFileName = %CharacterFileName%.xml
-
-        IniWrite, %CharacterFileName%, %IniFile%, General, CharacterBuildFileName
+        ; Get the PoB Directory from the PoB Path
+        SplitPath, FullPath, , PoBPath
+        IniWrite, %PoBPath%, %IniFile%, General, PathToPoB
+        Gui, InforWindowGUI:Hide
     }
 }
 
-TestItemFromClipboard(showPicker) {
+TestItemFromClipboard(FileName := False) {
+    ; If parameter is omitted, use the stored file name
+    FileName := FileName ? FileName : CharacterFileName
     ; Verify the information is what we're looking for
-    If RegExMatch(clipboard, "Rarity: .*?\R.*?\R?.*?\R--------\R.*") = 0 {
+    if RegExMatch(clipboard, "Rarity: .*?\R.*?\R?.*?\R--------\R.*") = 0 {
         MsgBox "Not a PoE item"
-        Return
+        return
     }
 
-    If showPicker || !FileExist(BuildDir . "\" . CharacterFileName) {
-        GetCharacterFileName(CharacterFileName, true)
-    }
-
-    InfoHwnd := DisplayInformation("Parsing Item Data...")
+    DisplayInformation("Parsing Item Data...")
     ; Erase old content first
     FileDelete, %A_Temp%\PoBTestItem.txt
+    FileDelete, %A_Temp%\PoBTestItem.txt.html
     FileAppend, %clipboard%, %A_Temp%\PoBTestItem.txt
-
-    RunWait, "%LuaJIT%" "%LuaDir%\TestItem.lua" "%BuildDir%\%CharacterFileName%" "%A_Temp%\PoBTestItem.txt", , Hide
-    Gui, %InfoHwnd%:Destroy
+    
+    if (FileName <> "CURRENT")
+        FileName = % BuildDir . "\" . FileName
+    
+    RunWait, "%LuaJIT%" "%LuaDir%\TestItem.lua" "%FileName%" "%A_Temp%\PoBTestItem.txt", , Hide
+    DisplayInformation()
     DisplayOutput()
 }
 
-GenerateDPSSearch(showPicker) {
-    If showPicker || !FileExist(BuildDir . "\" . CharacterFileName) {
-        GetCharacterFileName(CharacterFileName, true)
-    }
+GenerateDPSSearch(FileName := False) {
+    ; If parameter is omitted, use the stored file name
+    FileName := FileName ? FileName : CharacterFileName
 
-    RunWait, "%LuaJIT%" "%LuaDir%\SearchDPS.lua" "%BuildDir%\%CharacterFileName%", , Hide
+    if (FileName <> "CURRENT")
+        FileName = % BuildDir . "\" . FileName
+    DisplayInformation("Generating DPS search...")
+    RunWait, "%LuaJIT%" "%LuaDir%\SearchDPS.lua" "%FileName%", , Hide
+    DisplayInformation()
 }
 
-ClipboardChange(ContentType) {
-    If ContentType != 1
-        Return
+UpdateCharacterBuild(FileName := False) {
+    ; If parameter is omitted, use the stored file name
+    FileName := FileName ? FileName : CharacterFileName
 
-    TestItemFromClipboard(false)
+    if (FileName <> "CURRENT")
+        FileName = % BuildDir . "\" . FileName
+
+    DisplayInformation("Updating Character Build")
+    RunWait, "%LuaJIT%" "%LuaDir%\UpdateBuild.lua" "%FileName%", , Hide
+    DisplayInformation()
+}
+
+SaveCharacterFile(NewFileName) {
+    CharacterFileName = %NewFileName%
+    IniWrite, %NewFileName%, %IniFile%, General, CharacterBuildFileName
+}
+
+;--------------------------------------------------
+; GUI Display Functions
+;--------------------------------------------------
+DisplayInformation(string := "") {
+    ; Hide the Information Window
+    if (!string) {
+        Gui, InfoWindowGUI:Hide
+        return
+    }
+
+    GuiControl, InfoWindowGUI:Text, InfoTextCtrl, %string%
+
+    WinGetPos, winX, winY, winW, winH, A
+    WinGetPos, , , guiW, guiH, ahk_id %InfoWindowHwnd%
+    posX = % winX + (winW - guiW) / 2
+    posY = % winY + 50
+    Gui, InfoWindowGUI:Show, X%posX% Y%posY% NoActivate
+}
+
+DisplayCharacterPicker(FuncToCall := False) {
+    ListEntries =
+    ; Does not support folders in the Builds Directory
+    loop Files, %BuildDir%\*.xml
+    {
+        SplitPath, A_LoopFileName, , , , CBFileName
+        ListEntries = %ListEntries%|%CBFileName%
+    }
+
+    GuiControl, CharacterPickerGUI:Text, CharacterListCtrl, %ListEntries%
+
+    if (!FuncToCall)
+        GuiControl, CharacterPickerGUI:+Disabled, CharacterChangeCtrl
+    else
+        GuiControl, CharacterPickerGUI:-Disabled, CharacterChangeCtrl
+
+    ; Move CharacterPicker to the center of the currently active window
+    WinGetPos, winX, winY, winW, winH, A
+    WinGetPos, , , guiW, guiH, ahk_id %CharacterPickerHwnd%
+    posX = % winX + (winW - guiW) / 2
+    posY = % winY + (winH - guiH) / 2
+    Gui, CharacterPickerGUI:Show, X%posX% Y%posY%
+
+    DetectHiddenWindows, Off
+    WinWait, ahk_id %CharacterPickerHwnd%
+    WinWaitClose, ahk_id %CharacterPickerHwnd%
+    DetectHiddenWindows, On
+
+    ; Set the Value to "CURRENT" instead of a specific path name
+    if (CharacterCurrentCtrl)
+        CharacterListCtrl = CURRENT
+    ; Ignores bypassing a selection
+    else if (CharacterListCtrl)
+        CharacterListCtrl = % CharacterListCtrl . ".xml"
+    else {
+        MsgBox, You didn't make a selection. The script will now exit
+        ExitApp, 1
+    }
+
+    ; Update the build before continuing
+    if (CharacterUpdateCtrl)
+        UpdateCharacterBuild(CharacterListCtrl)
+
+    ; Update the INI with the changes
+    if (CharacterChangeCtrl)
+        SaveCharacterFile(CharacterListCtrl)
+
+    ; Call the passed function
+    if (FuncToCall)
+        %FuncToCall%(CharacterListCtrl)
 }
 
 DisplayOutput() {
-    ItemViewerControl.Navigate("file://" . A_Temp . "\PoBTestItem.txt.html")
-    while ItemViewerControl.busy or ItemViewerControl.ReadyState != 4
+    if (!FileExist(A_Temp . "\PoBTestItem.txt.html")) {
+        MsgBox, Item type is not supported.
+        return
+    }
+
+    ItemViewerCtrl.Navigate("file://" . A_Temp . "\PoBTestItem.txt.html")
+    while ItemViewerCtrl.busy or ItemViewerCtrl.ReadyState != 4
         Sleep 10
     WinGetPos, winX, winY, winW, winH, A
     Gui, ItemViewerGUI:+LastFound
-    Gui, ItemViewerGUI:Show, Hide NoActivate
-    WinGetPos, , , guiW, guiH
+    WinGetPos, , , guiW, guiH, ahk_id %ItemViewerHwnd%
     MouseGetPos, mouseX, mouseY
-    posX = % ((mouseX > winX + winW / 2) ? (winX + ((winW / 2) - guiW) / 2) : (winX + ((winW / 2) + guiW) / 2))
-    posY = % ((mouseY > winY + winH / 2) ? (winY + ((winH / 2) - guiH) / 2) : (winY + ((winY / 2) + guiH) / 2))
+    posX = % ((mouseX > (winX + winW / 2)) ? (winX + winW * 0.25 - guiW * 0.5) : (winX + winW * 0.75 - guiW * 0.5))
+    posY = % ((mouseY > (winY + winH / 2)) ? (winY + winH * 0.25 - guiH * 0.5) : (winY + winH * 0.75 - guiH * 0.5))
     Gui, ItemViewerGUI:Show, w400 h500 X%posX% Y%posY% NoActivate
-    return
 }
 
-DisplayInformation(string) {
-    WinGetPos, winX, winY, winW, winH, A
-    Gui, Info:New, +AlwaysOnTop -Border -MaximizeBox -MinimizeBox +LastFound +Disabled HwndInfoHwnd
-    Gui, Info:Add, Text, , %string%
-    Gui, Info:Show, Hide NoActivate
-    WinGetPos, , , guiW, guiH
-    posX = % winX + (winW - guiW) / 2
-    posY = % winY + 50
-    Gui, Info:Show, X%posX% Y%posY% NoActivate
-    return InfoHwnd
-}
-
-; Clean up temporary files, if able to
 ExitFunc() {
+    ; Clean up temporary files, if able to
     FileDelete, %A_Temp%\PoBTestItem.txt
     FileDelete, %A_Temp%\PoBTestItem.txt.html
-    return
 }
-
-/*
-;--------------------------------------------------
-; Window Detection
-;--------------------------------------------------
-
-; Path of Exile Window
-GetPoEID(PoEID)
-GetPoBID(PoBID)
-
-;ToolTip, %PoEID%`n%PoBID%
-
-; Path of Building Window
-If !PoEID
-{
-    ; MsgBox Please open Path of Exile before continuing.
-}
-
-If !PoBID
-{
-    ; MsgBox Please open Path of Building before continuing.
-}
-
-;--------------------------------------------------
-; Hotkeys
-;--------------------------------------------------
-
-; CTRL + Shift + `
-^+`::
-MouseGetPos, , , winID
-GetPoEID(PoEID)
-
-; Window under cursor is PoE
-IfEqual, winID, %PoEID%
-{
-    WinActivate, ahk_id %id%
-    MsgBox PoE was detected
-}
-
-; Window was not PoE
-Else
-{
-    MsgBox PoE was not detected
-}
-
-;--------------------------------------------------
-; Functions
-;--------------------------------------------------
-
-GetPoEID(ByRef PoEID) {
-    If !PoEID Or !WinExist("ahk_id " . %PoEID%)
-        WinGet, PoEID, ID, Path of Exile ahk_class POEWindowClass
-}
-
-GetPoBID(ByRef PoBID) {
-    If !PoBID Or !WinExist("ahk_id " . %PoBID%)
-        WinGet, PoBID, ID, Path of Building ahk_class SimpleGraphic Class
-} */
