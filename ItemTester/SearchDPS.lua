@@ -17,8 +17,15 @@ dofile(SCRIPT_PATH.."mockui.lua")
 xml = require("xml")
 inspect = require("inspect")
 
+function findRelevantStat()
+    local calcFunc, stats = build.calcsTab:GetMiscCalculator()
+    if (stats['CombinedDPS']) then return 'CombinedDPS' end
+    if (stats['AverageHit']) then return 'AverageHit' end
+    print("Don't know how to deal with this build's damage output type")
+    os.exit(1)
+end
 
-function findModEffect(modLine)
+function findModEffect(modLine, statField)
     -- Construct an empty passive socket node to test in
     local testNode = {id="temporary-test-node", type="Socket", alloc=false, sd={"Temp Test Socket"}, modList={}}
 
@@ -31,9 +38,9 @@ function findModEffect(modLine)
     local calcFunc, baseStats = build.calcsTab:GetMiscCalculator()
     local newStats = calcFunc({ addNodes={ [testNode]=true } })
 
-    -- Pull out the difference in Total DPS
-    local statVal1 = newStats.TotalDPS or newStats.AverageHit or 0
-    local statVal2 = baseStats.TotalDPS or baseStats.AverageHit or 0
+    -- Pull out the difference in DPS
+    local statVal1 = newStats[statField] or 0
+    local statVal2 = baseStats[statField] or 0
     local diff = statVal1 - statVal2
 
     return diff
@@ -114,16 +121,99 @@ local pickedPartName = activeEffect.grantedEffect.parts and activeEffect.granted
 
 print("Character: "..build.buildName)
 print("Current skill group/gem/part: "..pickedGroupName.." / "..pickedActiveSkillName.." / "..(pickedPartName or '-'))
+
+-- Work out which field to use to report damage: CombinedDPS / AverageHit
+local statField = findRelevantStat()
+print("Using stat: " .. statField)
 print()
 
--- Get DPS difference for each mod and output
+-- Setup the main actor for gathering data
+env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
+
+-- Get DPS difference for each mod
 url = 'http://gw2crafts.net/pobsearch/modsearch.html?'
 for _,mod in ipairs(modData) do
-    local dps = findModEffect(mod.desc)
+    local dps = findModEffect(mod.desc, statField)
     -- dps = dps / tonumber(mod.count) -- only needed if inputting to the original Python script
     url = url .. string.format("%s=%.1f&", urlencode(mod.name), dps)
     -- print(string.format("%s = %.1f", mod.desc, dps))
 end
 
+-- Grab flags from main skill
+local flags = {}
+for skillType,_ in pairs(env.player.mainSkill.skillTypes) do
+    for name,type in pairs(SkillType) do
+        if type == skillType then
+            if name:match("Can[A-Z]") or name:match("Triggerable") or name:match(".+SingleTarget") or name:match("Type[0-9]+") then
+                name = nil
+            elseif name:match("ManaCost.+") or name:match("Aura.*") or name:match("Buff.*") then
+                name = nil
+            elseif name == "Instant" then
+                name = nil
+            elseif name:match(".+Skill") or name:match(".+Spell") then
+                name = name:sub(0, #name-5)
+            elseif name:match("Causes.+") then
+                name = name:sub(7)
+            elseif name == "ProjectileAttack" then
+                name = "Projectile"
+            end
+            if name then flags[name] = true end
+        end
+    end
+end
+
+-- Insert flags for weapon types
+if env.player.itemList["Weapon 1"] then
+    flags[env.player.itemList["Weapon 1"].type] = true
+    if env.player.itemList["Weapon 1"].base.tags.two_hand_weapon then flags["Two Handed Weapon"] = true end
+    if env.player.itemList["Weapon 1"].base.tags.mace then flags["Mace"] = true end
+    if env.player.itemList["Weapon 1"].base.tags.bow then flags["Bow"] = true end
+    if env.player.itemList["Weapon 1"].base.tags.wand then flags["Wand"] = true end
+    if env.player.itemList["Weapon 1"].base.tags.claw then flags["Claw"] = true end
+    if env.player.itemList["Weapon 1"].base.tags.staff then flags["Staff"] = true end
+    if env.player.itemList["Weapon 1"].base.tags.sword then flags["Sword"] = true end
+    if env.player.itemList["Weapon 1"].base.tags.axe then flags["Axe"] = true end
+    if env.player.itemList["Weapon 1"].base.tags.dagger then flags["Dagger"] = true end
+    if env.player.itemList["Weapon 1"].base.tags.shield then flags["Shield"] = true end
+end
+if env.player.itemList["Weapon 2"] then
+    flags[env.player.itemList["Weapon 2"].type] = true
+    if env.player.itemList["Weapon 2"].base.tags.two_hand_weapon then flags["Two Handed Weapon"] = true end
+    if env.player.itemList["Weapon 2"].base.tags.mace then flags["Mace"] = true end
+    if env.player.itemList["Weapon 2"].base.tags.bow then flags["Bow"] = true end
+    if env.player.itemList["Weapon 2"].base.tags.wand then flags["Wand"] = true end
+    if env.player.itemList["Weapon 2"].base.tags.claw then flags["Claw"] = true end
+    if env.player.itemList["Weapon 2"].base.tags.staff then flags["Staff"] = true end
+    if env.player.itemList["Weapon 2"].base.tags.sword then flags["Sword"] = true end
+    if env.player.itemList["Weapon 2"].base.tags.axe then flags["Axe"] = true end
+    if env.player.itemList["Weapon 2"].base.tags.dagger then flags["Dagger"] = true end
+    if env.player.itemList["Weapon 2"].base.tags.shield then flags["Shield"] = true end
+end
+if env.player.itemList["Weapon 1"] and env.player.itemList["Weapon 1"].base.tags.one_hand_weapon and
+        env.player.itemList["Weapon 2"] and env.player.itemList["Weapon 2"].base.tags.one_hand_weapon then
+    flags["Duel Wielding"] = true -- correct spelling when website supports it
+end
+
+-- Grab config flags
+if env.configInput.useFrenzyCharges then flags["Frenzy"] = true end
+if env.configInput.usePowerCharges then flags["Power"] = true end
+if env.configInput.useEnduranceCharges then flags["Endurance"] = true end
+if env.configInput.conditionCritRecently then flags["Crit"] = true end
+if env.configInput.conditionUsingFlask then flags["Flasked"] = true end
+
+-- Grab enemy status flags
+for configFlag,_ in pairs(env.configInput) do
+    if configFlag:match('conditionEnemy.+') then flags[configFlag:sub(15)] = true end
+end
+
+-- Infer some extra flags from what we already have
+if flags.Fire or flags.Cold or flags.Lightning then flags.Elemental = true end
+
+-- Add flags to URL
+for flag,_ in pairs(flags) do
+    url = url .. urlencode(flag) .. "=True&"
+    print(flag)
+end
+
 print(url)
-os.execute('start "" "' .. url .. '"')
+-- os.execute('start "" "' .. url .. '"')
