@@ -58,13 +58,21 @@ Ok:
 
 ; Test item from clipboard
 ^#c::
-    TestItemFromClipboard()
+    Item := GetItemFromClipboard()
+    if (Item) {
+        TestItemFromClipboard(Item)
+    }
     return
 
 ; Test item fom clipboard with character picker
 ^#!c::
-    filename := DisplayCharacterPicker(True)
-    if (filename) TestItemFromClipboard(filename)
+    Item := GetItemFromClipboard()
+    if (Item) {
+        filename := DisplayCharacterPicker(True)
+        if (filename) {
+            TestItemFromClipboard(filename)
+        }
+    }
     return
 
 ; Generate DPS search
@@ -148,20 +156,24 @@ GetPoBPath() {
     }
 }
 
-TestItemFromClipboard(FileName := False) {
-    ; If parameter is omitted, use the stored file name
-    FileName := FileName ? FileName : CharacterFileName
+GetItemFromClipboard() {
     ; Verify the information is what we're looking for
     if RegExMatch(clipboard, "Rarity: .*?\R.*?\R?.*?\R--------\R.*") = 0 {
         MsgBox "Not a PoE item"
-        return
+        return False
     }
+    return clipboard
+}
+
+TestItemFromClipboard(Item, FileName := False) {
+    ; If parameter is omitted, use the stored file name
+    FileName := FileName ? FileName : CharacterFileName
 
     DisplayInformation("Parsing Item Data...")
     ; Erase old content first
     FileDelete, %A_Temp%\PoBTestItem.txt
     FileDelete, %A_Temp%\PoBTestItem.txt.html
-    FileAppend, %clipboard%, %A_Temp%\PoBTestItem.txt
+    FileAppend, %Item%, %A_Temp%\PoBTestItem.txt
 
     if (FileName <> "CURRENT")
         FileName = % BuildDir . "\" . FileName
