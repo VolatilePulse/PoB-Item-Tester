@@ -63,7 +63,8 @@ Ok:
 
 ; Test item fom clipboard with character picker
 ^#!c::
-    DisplayCharacterPicker("TestItemFromClipboard")
+    filename := DisplayCharacterPicker(True)
+    if (filename) TestItemFromClipboard(filename)
     return
 
 ; Generate DPS search
@@ -73,7 +74,8 @@ Ok:
 
 ; Generate DPS search with character picker
 ^#!d::
-    DisplayCharacterPicker("GenerateDPSSearch")
+    filename := DisplayCharacterPicker(True)
+    if (filename) GenerateDPSSearch(filename)
     return
 
 ;--------------------------------------------------
@@ -94,7 +96,7 @@ CreateGUI() {
     Gui, Font, s16
     Gui, CharacterPickerGUI:Add, ListBox, vCharacterListCtrl gCPListBox r5, %CharacterFileName%
     Gui, Font, s10
-    Gui, CharacterPickerGUI:Add, Checkbox, vCharacterUpdateCtrl Checked, Update Build before continuing
+    Gui, CharacterPickerGUI:Add, Checkbox, vCharacterUpdateCtrl, Update Build before continuing
     Gui, CharacterPickerGUI:Add, Checkbox, vCharacterChangeCtrl Checked, Make this the default Build
     Gui, CharacterPickerGUI:Add, Button, Default w50 gOK, OK
     Gui, CharacterPickerGUI:Show, NoActivate Hide
@@ -120,8 +122,12 @@ SetVariablesAndFiles() {
     EnvSet, LUA_PATH, %POBPATH%\lua\?.lua;%LuaDir%\?.lua
 
     ; Make sure the Character file still exists
-    if (CharacterFileName <> "CURRENT" and !(CharacterFileName and FileExist(BuildDir . "\" . CharacterFileName)))
-        DisplayCharacterPicker()
+    if (CharacterFileName <> "CURRENT" and !(CharacterFileName and FileExist(BuildDir . "\" . CharacterFileName))) {
+        if (!DisplayCharacterPicker(False)) {
+            MsgBox, You didn't make a selection. The script will now exit.
+            ExitApp, 1
+        }
+    }
 }
 
 GetPoBPath() {
@@ -156,10 +162,10 @@ TestItemFromClipboard(FileName := False) {
     FileDelete, %A_Temp%\PoBTestItem.txt
     FileDelete, %A_Temp%\PoBTestItem.txt.html
     FileAppend, %clipboard%, %A_Temp%\PoBTestItem.txt
-    
+
     if (FileName <> "CURRENT")
         FileName = % BuildDir . "\" . FileName
-    
+
     RunWait, "%LuaJIT%" "%LuaDir%\TestItem.lua" "%FileName%" "%A_Temp%\PoBTestItem.txt", , Hide
     DisplayInformation()
     DisplayOutput()
@@ -212,7 +218,7 @@ DisplayInformation(string := "") {
     Gui, InfoWindowGUI:Show, X%posX% Y%posY% NoActivate
 }
 
-DisplayCharacterPicker(FuncToCall := False) {
+DisplayCharacterPicker(allowTemp) {
     ListEntries =
     ; Does not support folders in the Builds Directory
     loop Files, %BuildDir%\*.xml
@@ -223,10 +229,10 @@ DisplayCharacterPicker(FuncToCall := False) {
 
     GuiControl, CharacterPickerGUI:Text, CharacterListCtrl, %ListEntries%
 
-    if (!FuncToCall)
-        GuiControl, CharacterPickerGUI:+Disabled, CharacterChangeCtrl
-    else
+    if (allowTemp)
         GuiControl, CharacterPickerGUI:-Disabled, CharacterChangeCtrl
+    else
+        GuiControl, CharacterPickerGUI:+Disabled, CharacterChangeCtrl
 
     ; Move CharacterPicker to the center of the currently active window
     WinGetPos, winX, winY, winW, winH, A
@@ -247,8 +253,7 @@ DisplayCharacterPicker(FuncToCall := False) {
     else if (CharacterListCtrl)
         CharacterListCtrl = % CharacterListCtrl . ".xml"
     else {
-        MsgBox, You didn't make a selection. The script will now exit
-        ExitApp, 1
+        return False
     }
 
     ; Update the build before continuing
@@ -259,9 +264,7 @@ DisplayCharacterPicker(FuncToCall := False) {
     if (CharacterChangeCtrl)
         SaveCharacterFile(CharacterListCtrl)
 
-    ; Call the passed function
-    if (FuncToCall)
-        %FuncToCall%(CharacterListCtrl)
+    return CharacterListCtrl
 }
 
 DisplayOutput() {
