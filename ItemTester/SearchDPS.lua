@@ -17,6 +17,7 @@ dofile(SCRIPT_PATH.."mockui.lua")
 xml = require("xml")
 inspect = require("inspect")
 
+debug = false
 
 function findRelevantStat(activeEffect)
     local calcFunc, stats = build.calcsTab:GetMiscCalculator()
@@ -66,6 +67,18 @@ function urlencode(url)
     end
     url = url:gsub("([^%w])", char_to_hex)
     return url
+end
+
+function extractWeaponFlags(env, weapon, flags)
+    if not weapon or not weapon.type then return end
+    local info = env.data.weaponTypeInfo[weapon.type]
+    flags[info.flag] = true
+    if info.melee then flags['Melee'] = true end
+    if info.oneHand then
+        flags['One Handed Weapon'] = true
+    else
+        flags['Two Handed Weapon'] = true
+    end
 end
 
 
@@ -140,6 +153,7 @@ print()
 
 -- Setup the main actor for gathering data
 local env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
+local actor = env.player
 
 -- Get DPS difference for each mod
 url = 'http://gw2crafts.net/pobsearch/modsearch.html?'
@@ -150,9 +164,22 @@ for _,mod in ipairs(modData) do
     -- print(string.format("%s = %.1f", mod.desc, dps))
 end
 
+if debug then
+    print("Conditions:")
+    print(inspect(env.modDB.conditions))
+
+    print("\nSkill flags:")
+    print(inspect(actor.mainSkill.skillFlags))
+
+    print("\nWeapon 1: " .. (actor.weaponData1.type or '-') .. " (" .. (actor.weaponData1.type and env.data.weaponTypeInfo[actor.weaponData1.type].flag or '-') .. ")")
+    print("Weapon 2: " .. (actor.weaponData2.type or '-') .. " (" .. (actor.weaponData2.type and env.data.weaponTypeInfo[actor.weaponData2.type].flag or '-') .. ")")
+    print()
+end
+
+
 -- Grab flags from main skill
 local flags = {}
-for skillType,_ in pairs(env.player.mainSkill.skillTypes) do
+for skillType,_ in pairs(actor.mainSkill.skillTypes) do
     for name,type in pairs(SkillType) do
         if type == skillType then
             if name:match("Can[A-Z]") or name:match("Triggerable") or name:match(".+SingleTarget") or name:match("Type[0-9]+") then
@@ -172,44 +199,23 @@ for skillType,_ in pairs(env.player.mainSkill.skillTypes) do
         end
     end
 end
+if actor.mainSkill.skillFlags.totem then flags['Totem'] = true end
+if actor.mainSkill.skillFlags.trap then flags['Trap'] = true end
+if actor.mainSkill.skillFlags.mine then flags['Mine'] = true end
+if actor.mainSkill.skillFlags.minion then flags['Minion'] = true end
+if actor.mainSkill.skillFlags.hit then flags['Recent Hit'] = true end
 
 -- Insert flags for weapon types
-if env.player.itemList["Weapon 1"] then
-    flags[env.player.itemList["Weapon 1"].type] = true
-    if env.player.itemList["Weapon 1"].base.tags.two_hand_weapon then flags["Two Handed Weapon"] = true end
-    if env.player.itemList["Weapon 1"].base.tags.mace then flags["Mace"] = true end
-    if env.player.itemList["Weapon 1"].base.tags.bow then flags["Bow"] = true end
-    if env.player.itemList["Weapon 1"].base.tags.wand then flags["Wand"] = true end
-    if env.player.itemList["Weapon 1"].base.tags.claw then flags["Claw"] = true end
-    if env.player.itemList["Weapon 1"].base.tags.staff then flags["Staff"] = true end
-    if env.player.itemList["Weapon 1"].base.tags.sword then flags["Sword"] = true end
-    if env.player.itemList["Weapon 1"].base.tags.axe then flags["Axe"] = true end
-    if env.player.itemList["Weapon 1"].base.tags.dagger then flags["Dagger"] = true end
-    if env.player.itemList["Weapon 1"].base.tags.shield then flags["Shield"] = true end
-end
-if env.player.itemList["Weapon 2"] then
-    flags[env.player.itemList["Weapon 2"].type] = true
-    if env.player.itemList["Weapon 2"].base.tags.two_hand_weapon then flags["Two Handed Weapon"] = true end
-    if env.player.itemList["Weapon 2"].base.tags.mace then flags["Mace"] = true end
-    if env.player.itemList["Weapon 2"].base.tags.bow then flags["Bow"] = true end
-    if env.player.itemList["Weapon 2"].base.tags.wand then flags["Wand"] = true end
-    if env.player.itemList["Weapon 2"].base.tags.claw then flags["Claw"] = true end
-    if env.player.itemList["Weapon 2"].base.tags.staff then flags["Staff"] = true end
-    if env.player.itemList["Weapon 2"].base.tags.sword then flags["Sword"] = true end
-    if env.player.itemList["Weapon 2"].base.tags.axe then flags["Axe"] = true end
-    if env.player.itemList["Weapon 2"].base.tags.dagger then flags["Dagger"] = true end
-    if env.player.itemList["Weapon 2"].base.tags.shield then flags["Shield"] = true end
-end
-if env.player.itemList["Weapon 1"] and env.player.itemList["Weapon 1"].base.tags.one_hand_weapon and
-        env.player.itemList["Weapon 2"] and env.player.itemList["Weapon 2"].base.tags.one_hand_weapon then
-    flags["Duel Wielding"] = true -- correct spelling when website supports it
-end
+flags["Shield"] = (actor.itemList["Weapon 2"] and actor.itemList["Weapon 2"].type == "Shield") or (actor == actor and env.aegisModList)
+flags["Duel Wielding"] = actor.weaponData1.type and actor.weaponData2.type and actor.weaponData1.type ~= "None"
+if actor.itemList["Weapon 1"] then extractWeaponFlags(env, actor.weaponData1, flags) end
+if actor.itemList["Weapon 2"] then extractWeaponFlags(env, actor.weaponData2, flags) end
 
 -- Grab config flags
 if env.configInput.useFrenzyCharges then flags["Frenzy"] = true end
 if env.configInput.usePowerCharges then flags["Power"] = true end
 if env.configInput.useEnduranceCharges then flags["Endurance"] = true end
-if env.configInput.conditionCritRecently then flags["Crit"] = true end
+if env.configInput.conditionCritRecently then flags["Recent Crit"] = true end
 if env.configInput.conditionUsingFlask then flags["Flasked"] = true end
 
 -- Grab enemy status flags
@@ -221,9 +227,14 @@ end
 if flags.Fire or flags.Cold or flags.Lightning then flags.Elemental = true end
 
 -- Add flags to URL
-for flag,_ in pairs(flags) do
-    url = url .. urlencode(flag) .. "=True&"
+for flag,value in pairs(flags) do
+    if value then url = url .. urlencode(flag) .. "=True&" end
+    if debug then print(flag) end
 end
 
-print(url)
-os.execute('start "" "' .. url .. '"')
+if debug then
+    print()
+    print(url)
+else
+    os.execute('start "" "' .. url .. '"')
+end
