@@ -70,7 +70,7 @@ Ok:
     if (Item) {
         filename := DisplayCharacterPicker(True)
         if (filename) {
-            TestItemFromClipboard(filename)
+            TestItemFromClipboard(Item, filename)
         }
     }
     return
