@@ -81,6 +81,24 @@ function extractWeaponFlags(env, weapon, flags)
     end
 end
 
+function getCharges(name, modDB)
+    local value = modDB:Sum("BASE", nil, name.."ChargesMax")
+    if modDB:Sum("FLAG", nil, "Use"..name.."Charges") then
+		value = modDB:Sum("OVERRIDE", nil, name.."Charges") or value
+	else
+		value = 0
+    end
+    return value
+end
+
+function encodeValue(value)
+    if value == true then
+        return "True"
+    else
+        return string.format("%s", value)
+    end
+end
+
 
 modData = {
     {name="flat accuracy", desc="+100 to Accuracy Rating", count=100},
@@ -108,6 +126,9 @@ modData = {
     {name="extra lightning", desc="15% of Physical Damage as Extra Lightning Damage", count=15},
     {name="extra cold", desc="15% of Physical Damage as Extra Cold Damage", count=15},
     {name="extra fire", desc="15% of Physical Damage as Extra Fire Damage", count=15},
+    {name="lightning as extra chaos", desc="15% of Lightning Damage as Extra Chaos Damage", count=15},
+    {name="cold as extra chaos", desc="15% of Cold Damage as Extra Chaos Damage", count=15},
+    {name="fire as extra chaos", desc="15% of Fire Damage as Extra Chaos Damage", count=15},
     {name="extra chaos", desc="Gain 15% of Non-Chaos damage as Extra Chaos Damage", count=15},
     {name="ele as chaos", desc="Gain 15% of Elemental Damage as Extra Chaos Damage", count=15},
     {name="+1 power charge", desc="+1 to Maximum Power Charges", count=1},
@@ -168,6 +189,9 @@ if debug then
     print("Conditions:")
     print(inspect(env.modDB.conditions))
 
+    print("\nConfig:")
+    print(inspect(env.configInput))
+
     print("\nSkill flags:")
     print(inspect(actor.mainSkill.skillFlags))
 
@@ -218,6 +242,11 @@ if env.configInput.useEnduranceCharges then flags["Endurance"] = true end
 if env.configInput.conditionCritRecently then flags["Recent Crit"] = true end
 if env.configInput.conditionUsingFlask then flags["Flasked"] = true end
 
+-- Work out how many charges we have
+flags["Frenzy Count"] = getCharges("Frenzy", actor.modDB)
+flags["Power Count"] = getCharges("Power", actor.modDB)
+flags["Endurance Count"] = getCharges("Endurance", actor.modDB)
+
 -- Grab enemy status flags
 for configFlag,_ in pairs(env.configInput) do
     if configFlag:match('conditionEnemy.+') then flags[configFlag:sub(15)] = true end
@@ -228,8 +257,8 @@ if flags.Fire or flags.Cold or flags.Lightning then flags.Elemental = true end
 
 -- Add flags to URL
 for flag,value in pairs(flags) do
-    if value then url = url .. urlencode(flag) .. "=True&" end
-    if debug then print(flag) end
+    if value then url = url..urlencode(flag).."="..encodeValue(value).."&" end
+    if debug then print(flag..string.format(" = %s", value)) end
 end
 
 if debug then
