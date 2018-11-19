@@ -126,11 +126,11 @@ modData = {
     {name="extra lightning", desc="15% of Physical Damage as Extra Lightning Damage", count=15},
     {name="extra cold", desc="15% of Physical Damage as Extra Cold Damage", count=15},
     {name="extra fire", desc="15% of Physical Damage as Extra Fire Damage", count=15},
+    {name="extra chaos", desc="Gain 15% of Non-Chaos damage as Extra Chaos Damage", count=15},
+    {name="ele as chaos", desc="Gain 15% of Elemental Damage as Extra Chaos Damage", count=15},
     {name="lightning as extra chaos", desc="15% of Lightning Damage as Extra Chaos Damage", count=15},
     {name="cold as extra chaos", desc="15% of Cold Damage as Extra Chaos Damage", count=15},
     {name="fire as extra chaos", desc="15% of Fire Damage as Extra Chaos Damage", count=15},
-    {name="extra chaos", desc="Gain 15% of Non-Chaos damage as Extra Chaos Damage", count=15},
-    {name="ele as chaos", desc="Gain 15% of Elemental Damage as Extra Chaos Damage", count=15},
     {name="+1 power charge", desc="+1 to Maximum Power Charges", count=1},
     {name="+1 frenzy charge", desc="+1 to Maximum Frenzy Charges", count=1},
     {name="+1 endurance charge", desc="+1 to Maximum Endurance Charges", count=1},
@@ -164,8 +164,17 @@ local pickedActiveSkillName = activeEffect.grantedEffect.name
 local pickedPartIndex = activeEffect.grantedEffect.parts and activeEffect.srcInstance.skillPart
 local pickedPartName = activeEffect.grantedEffect.parts and activeEffect.grantedEffect.parts[pickedPartIndex].name
 
+-- Work out a reasonable skill name
+local skillName = pickedGroupName;
+if (pickedGroupName ~= pickedActiveSkillName) then
+    skillName = skillName.." / "..pickedActiveSkillName
+end
+if (pickedPartName) then
+    skillName = skillName.." / "..pickedPartName
+end
+
 print("Character: "..build.buildName)
-print("Current skill group/gem/part: "..pickedGroupName.." / "..pickedActiveSkillName.." / "..(pickedPartName or '-'))
+print("Current skill: "..skillName)
 
 -- Work out which field to use to report damage: CombinedDPS / AverageHit
 local statField = findRelevantStat(activeEffect)
@@ -260,6 +269,9 @@ for flag,value in pairs(flags) do
     if value then url = url..urlencode(flag).."="..encodeValue(value).."&" end
     if debug then print(flag..string.format(" = %s", value)) end
 end
+
+-- Add skill name and character name
+url = url.."Skill="..urlencode(skillName).."&".."Character="..urlencode(build.buildName)
 
 if debug then
     print()
