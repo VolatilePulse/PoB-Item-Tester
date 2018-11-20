@@ -98,11 +98,11 @@ CreateGUI() {
     Gui, InfoWindowGUI:Show, NoActivate Hide
 
     ; Character Picker
-    Gui, CharacterPickerGUI:New, +HwndCharacterPickerHwnd, Pick You Character Build File
-    ;Gui, CharacterPickerGUI:Margin, 20, 20
+    Gui, CharacterPickerGUI:New, +HwndCharacterPickerHwnd -MaximizeBox -MinimizeBox, Pick You Character Build File
+    Gui, CharacterPickerGUI:Margin, 8, 8
     Gui, CharacterPickerGUI:Add, Checkbox, vCharacterCurrentCtrl gCPCurrentCheck, Use PoB's last used build (since it last closed)
-    Gui, Font, s16
-    Gui, CharacterPickerGUI:Add, ListBox, vCharacterListCtrl gCPListBox r5, %CharacterFileName%
+    Gui, Font, s14
+    Gui, CharacterPickerGUI:Add, ListBox, vCharacterListCtrl gCPListBox r8 w300, %CharacterFileName%
     Gui, Font, s10
     Gui, CharacterPickerGUI:Add, Checkbox, vCharacterUpdateCtrl, Update Build before continuing
     Gui, CharacterPickerGUI:Add, Checkbox, vCharacterChangeCtrl Checked, Make this the default Build
@@ -233,9 +233,9 @@ DisplayInformation(string := "") {
 DisplayCharacterPicker(allowTemp) {
     ListEntries =
     ; Does not support folders in the Builds Directory
-    loop Files, %BuildDir%\*.xml
+    loop Files, %BuildDir%\*.xml, R
     {
-        SplitPath, A_LoopFileName, , , , CBFileName
+        CBFileName := SubStr(A_LoopFileLongPath, StrLen(BuildDir)+2, -4)
         ListEntries = %ListEntries%|%CBFileName%
     }
 
