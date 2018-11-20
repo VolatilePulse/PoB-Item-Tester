@@ -101,6 +101,10 @@ end
 
 
 modData = {
+    {name="% dot", desc="12% increased Damage over Time", count=12},
+    {name="% bleed", desc="12% increased Damage with Bleeding", count=12},
+    {name="% poison", desc="12% increased Damage with Poison", count=12},
+    {name="% ignite", desc="12% increased Burning Damage", count=12},
     {name="flat accuracy", desc="+100 to Accuracy Rating", count=100},
     {name="% accuracy", desc="10% increased Global Accuracy Rating", count=10},
     {name="% physical", desc="12% increased Physical Damage", count=12},
