@@ -147,7 +147,11 @@ modData = {
     {name="% dex", desc="+10% Dexterity", count=10},
     {name="% int", desc="+10% Intelligence", count=10},
     {name="% str", desc="+10% Strength", count=10},
-    {name="% lowest", desc="1% increased Damage per 5 of your lowest Attribute", count=1}
+    {name="% lowest", desc="1% increased Damage per 5 of your lowest Attribute", count=1},
+    {name="% life", desc="7% increased maximum Life", count=7},
+    {name="flat life", desc="+40 to maximum Life", count=40},
+    {name="% es", desc="7% increased maximum Energy Shield", count=7},
+    {name="flat es", desc="+40 to maximum Energy Shield", coun= 40}
 }
 
 
