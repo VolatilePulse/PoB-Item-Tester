@@ -5,9 +5,9 @@ HELP = [[
 ]]
 
 
-local BUILD_XML = arg[1];
-if BUILD_XML == nil then
-    print("Usage: SearchDPS.lua <build xml>")
+local BUILD_XML = arg[1]
+if BUILD_XML == nil or BUILD_XML == "-h" or BUILD_XML == "--help" or BUILD_XML == "/?" then
+    print("Usage: SearchDPS.lua <build xml>|CURRENT [<statname>|OPTIONS]")
     os.exit(1)
 end
 
@@ -20,8 +20,19 @@ inspect = require("inspect")
 
 debug = false
 
-function findRelevantStat(activeEffect)
+function findRelevantStat(activeEffect, chosenField)
     local calcFunc, stats = build.calcsTab:GetMiscCalculator()
+
+    if chosenField and stats[chosenField] ~= nil then
+        return chosenField
+    elseif chosenField and chosenField == "OPTIONS" then
+        print("\nAvailable stats:")
+        print(inspect(stats))
+        os.exit(1)
+    elseif chosenField and stats[chosenField] == nil then
+        print("Error: Stat '"..chosenField.."' is not found (case sensitive)")
+        os.exit(1)
+    end
 
     local useAverage = false
     for _,mod in ipairs(activeEffect.grantedEffect.baseMods) do
@@ -33,7 +44,7 @@ function findRelevantStat(activeEffect)
     if (stats['CombinedDPS']) and not useAverage then return 'CombinedDPS' end
     if (stats['AverageHit']) then return 'AverageHit' end
 
-    print("Don't know how to deal with this build's damage output type")
+    print("Error: Don't know how to deal with this build's damage output type")
     os.exit(1)
 end
 
@@ -138,7 +149,7 @@ print("Character: "..build.buildName)
 print("Current skill: "..skillName)
 
 -- Work out which field to use to report damage: CombinedDPS / AverageHit
-local statField = findRelevantStat(activeEffect)
+local statField = findRelevantStat(activeEffect, arg[2])
 print("Using stat: " .. statField)
 print()
 
@@ -156,7 +167,11 @@ for _,mod in ipairs(modData) do
 end
 
 if debug then
-    print("Conditions:")
+    -- print("Stats:")
+    -- local calcFunc, stats = build.calcsTab:GetMiscCalculator()
+    -- print(inspect(stats))
+
+    print("\nConditions:")
     print(inspect(env.modDB.conditions))
 
     print("\nConfig:")
