@@ -19,6 +19,9 @@ With the AHK script running...
 * Alternatively, press Ctrl-Windows-Alt-C to launch the build picker before performing the test.
 * A pop-up will show the item preview from inside Path of Building, including showing how your stats will be affected.
 
+Testing items on the official trade site:
+![Screenshot of the item tester in action](https://raw.githubusercontent.com/VolatilePulse/PoB-Item-Tester/master/imgs/sshot-tester.png)
+
 ## Build Update
 With the AHK script running...
 * Press Ctrl-Windows-U and wait a moment.
@@ -37,6 +40,9 @@ With the AHK script running...
 
 Note: This webservice is created and maintained by [Xanthics](https://github.com/xanthics). See [its repository](https://github.com/xanthics/PoE_Weighted_Search) for more details.
 Without this service this functionality would not be possible.
+
+A generated DPS search:
+![Screenshot of the DPS search result](https://raw.githubusercontent.com/VolatilePulse/PoB-Item-Tester/master/imgs/sshot-dps.png)
 
 ## Thanks
 This tool could not exist without the amazing Path of Building, without PoE_Weighted_Search... and of course without Grinding Gear Games.
