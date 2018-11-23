@@ -123,6 +123,7 @@ end
 if BUILD_XML ~= "CURRENT" then
     local buildXml = loadText(BUILD_XML)
     loadBuildFromXML(buildXml)
+    build.buildName = BUILD_XML
 end
 
 -- Gather chosen skill and part
