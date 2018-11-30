@@ -160,7 +160,8 @@ local env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
 local actor = env.player
 
 -- Get DPS difference for each mod
-url = 'http://gw2crafts.net/pobsearch/modsearch.html?'
+-- url = 'http://gw2crafts.net/pobsearch/modsearch.html?'
+url = 'https://xanthics.github.io/PoE_Weighted_Search/?'
 for _,mod in ipairs(modData) do
     local dps = findModEffect(mod.desc, statField)
     url = url .. string.format("%s=%.1f&", urlencode(mod.name), dps)
