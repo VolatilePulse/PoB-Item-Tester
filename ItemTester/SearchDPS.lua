@@ -231,9 +231,9 @@ end
 if baseStats["LifeUnreservedPercent"] and baseStats["LifeUnreservedPercent"] < 35 then flags["conditionLowLife"] = true end
 
 -- Work out how many charges we have
-values["FrenzyCount"] = env.configInput.overrideFrenzyCharges or getCharges("Frenzy", actor.modDB)
-values["PowerCount"] = env.configInput.overridePowerCharges or getCharges("Power", actor.modDB)
-values["EnduranceCount"] = env.configInput.overrideEnduranceCharges or getCharges("Endurance", actor.modDB)
+values["FrenzyCount"] = getCharges("Frenzy", actor.modDB)
+values["PowerCount"] = getCharges("Power", actor.modDB)
+values["EnduranceCount"] = getCharges("Endurance", actor.modDB)
 
 -- Infer some extra flags from what we already have
 if flags.Fire or flags.Cold or flags.Lightning then flags.Elemental = true end
