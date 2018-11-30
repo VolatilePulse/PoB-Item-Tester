@@ -155,6 +155,7 @@ print("Using stat: " .. statField)
 print()
 
 -- Setup the main actor for gathering data
+local calcFunc, baseStats = build.calcsTab:GetMiscCalculator()
 local env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
 local actor = env.player
 
@@ -228,6 +229,8 @@ if env.configInput.usePowerCharges then flags["Power"] = true end
 if env.configInput.useEnduranceCharges then flags["Endurance"] = true end
 if env.configInput.conditionCritRecently then flags["Recent Crit"] = true end
 if env.configInput.conditionUsingFlask then flags["Flasked"] = true end
+if env.configInput.conditionFullLife then flags["Full Life"] = true end
+if env.configInput.conditionLowLife or (baseStats["LifeUnreservedPercent"] and baseStats["LifeUnreservedPercent"] < 35) then flags["Low Life"] = true end
 
 -- Work out how many charges we have
 flags["Frenzy Count"] = getCharges("Frenzy", actor.modDB)
