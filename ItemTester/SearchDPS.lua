@@ -163,15 +163,12 @@ local actor = env.player
 url = 'http://gw2crafts.net/pobsearch/modsearch.html?'
 for _,mod in ipairs(modData) do
     local dps = findModEffect(mod.desc, statField)
-    -- dps = dps / tonumber(mod.count) -- only needed if inputting to the original Python script
     url = url .. string.format("%s=%.1f&", urlencode(mod.name), dps)
-    -- print(string.format("%s = %.1f", mod.desc, dps))
 end
 
 if debug then
     -- print("Stats:")
-    -- local calcFunc, stats = build.calcsTab:GetMiscCalculator()
-    -- print(inspect(stats))
+    -- print(inspect(baseStats))
 
     print("\nConditions:")
     print(inspect(env.modDB.conditions))
@@ -187,9 +184,10 @@ if debug then
     print()
 end
 
+local flags = {}
+local values = {}
 
 -- Grab flags from main skill
-local flags = {}
 for skillType,_ in pairs(actor.mainSkill.skillTypes) do
     for name,type in pairs(SkillType) do
         if type == skillType then
@@ -214,42 +212,46 @@ if actor.mainSkill.skillFlags.totem then flags['Totem'] = true end
 if actor.mainSkill.skillFlags.trap then flags['Trap'] = true end
 if actor.mainSkill.skillFlags.mine then flags['Mine'] = true end
 if actor.mainSkill.skillFlags.minion then flags['Minion'] = true end
-if actor.mainSkill.skillFlags.hit then flags['Recent Hit'] = true end
+if actor.mainSkill.skillFlags.hit then flags['conditionHitRecently'] = true end
 
 -- Insert flags for weapon types
 flags["Shield"] = (actor.itemList["Weapon 2"] and actor.itemList["Weapon 2"].type == "Shield") or (actor == actor and env.aegisModList)
-flags["Duel Wielding"] = actor.weaponData1.type and actor.weaponData2.type and actor.weaponData1.type ~= "None"
+flags["DuelWielding"] = actor.weaponData1.type and actor.weaponData2.type and actor.weaponData1.type ~= "None"
 if actor.itemList["Weapon 1"] then extractWeaponFlags(env, actor.weaponData1, flags) end
 if actor.itemList["Weapon 2"] then extractWeaponFlags(env, actor.weaponData2, flags) end
 if flags["Spell"] then flags["Melee"] = nil end
 
 -- Grab config flags
-if env.configInput.useFrenzyCharges then flags["Frenzy"] = true end
-if env.configInput.usePowerCharges then flags["Power"] = true end
-if env.configInput.useEnduranceCharges then flags["Endurance"] = true end
-if env.configInput.conditionCritRecently then flags["Recent Crit"] = true end
-if env.configInput.conditionUsingFlask then flags["Flasked"] = true end
-if env.configInput.conditionFullLife then flags["Full Life"] = true end
-if env.configInput.conditionLowLife or (baseStats["LifeUnreservedPercent"] and baseStats["LifeUnreservedPercent"] < 35) then flags["Low Life"] = true end
+for flag,_ in pairs(env.configInput) do
+    if not flag:match("override") then
+        flags[flag] = true
+    end
+end
+if baseStats["LifeUnreservedPercent"] and baseStats["LifeUnreservedPercent"] < 35 then flags["conditionLowLife"] = true end
 
 -- Work out how many charges we have
-flags["Frenzy Count"] = getCharges("Frenzy", actor.modDB)
-flags["Power Count"] = getCharges("Power", actor.modDB)
-flags["Endurance Count"] = getCharges("Endurance", actor.modDB)
-
--- Grab enemy status flags
-for configFlag,_ in pairs(env.configInput) do
-    if configFlag:match('conditionEnemy.+') then flags[configFlag:sub(15)] = true end
-end
+values["FrenzyCount"] = env.configInput.overrideFrenzyCharges or getCharges("Frenzy", actor.modDB)
+values["PowerCount"] = env.configInput.overridePowerCharges or getCharges("Power", actor.modDB)
+values["EnduranceCount"] = env.configInput.overrideEnduranceCharges or getCharges("Endurance", actor.modDB)
 
 -- Infer some extra flags from what we already have
 if flags.Fire or flags.Cold or flags.Lightning then flags.Elemental = true end
 
--- Add flags to URL
-for flag,value in pairs(flags) do
-    if value then url = url..urlencode(flag).."="..encodeValue(value).."&" end
-    if debug then print(flag..string.format(" = %s", value)) end
+-- Add values to URL
+if debug then print('\nPost values:') end
+for name,value in pairs(values) do
+    if value then url = url..urlencode(name).."="..encodeValue(value).."&" end
+    if debug then print('  '..name..string.format(" = %s", value)) end
 end
+
+-- Add flags to URL
+if debug then print('\nPost flags:') end
+local flagsString = 'Flags='
+for flag,value in pairs(flags) do
+    if value then flagsString = flagsString..urlencode(flag:gsub(' ','')).."," end
+    if debug then print('  '..flag) end
+end
+url = url..flagsString.."&"
 
 -- Add skill name and character name
 url = url.."Skill="..urlencode(skillName).."&".."Character="..urlencode(build.buildName)
