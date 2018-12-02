@@ -266,6 +266,7 @@ DisplayInformation(string := "") {
 }
 
 GenerateCPList() {
+    CharacterListCtrl =
     ListEntries =
 
     loop Files, %BuildDir%\*.xml, R
