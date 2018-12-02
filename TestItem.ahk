@@ -49,7 +49,8 @@ CPListBox:
     return
 
 ChangeDir:
-    GetBuildDir(true)
+    GetBuildDir()
+    GenerateCPList()
     return
 
 Ok:
@@ -73,7 +74,7 @@ Ok:
 ^#!c::
     Item := GetItemFromClipboard()
     if (Item) {
-        filename := DisplayCharacterPicker(True)
+        filename := DisplayCharacterPicker()
         if (filename) {
             TestItemFromClipboard(Item, filename)
         }
@@ -87,7 +88,7 @@ Ok:
 
 ; Generate DPS search with character picker
 ^#!d::
-    filename := DisplayCharacterPicker(True)
+    filename := DisplayCharacterPicker()
     if (filename) GenerateDPSSearch(filename)
     return
 
@@ -107,7 +108,7 @@ CreateGUI() {
     Gui, CharacterPickerGUI:Margin, 8, 8
     Gui, CharacterPickerGUI:Add, Checkbox, vCharacterCurrentCtrl gCPCurrentCheck, Use PoB's last used build (since it last closed)
     Gui, CharacterPickerGUI:Add, Button, gChangeDir, Change
-    Gui, CharacterPickerGUI:Add, Text, vCharacterDirectoryText x+5, Build Directory
+    Gui, CharacterPickerGUI:Add, Text, vCharacterDirectoryText x+5 ym+27 w300, Build Directory
     Gui, Font, s14
     Gui, CharacterPickerGUI:Add, ListBox, vCharacterListCtrl gCPListBox r8 w300 xm, %CharacterFileName%
     Gui, Font, s10
@@ -130,7 +131,7 @@ SetVariablesAndFiles() {
 
     ; Make sure PoB hasn't moved
     GetPoBPath()
-    GetBuildDir()
+    GetBuildDir(false)
 
     SetWorkingDir, %PoBPath%
 
@@ -139,7 +140,7 @@ SetVariablesAndFiles() {
 
     ; Make sure the Character file still exists
     if (CharacterFileName <> "CURRENT" and !(CharacterFileName and FileExist(BuildDir . "\" . CharacterFileName))) {
-        if (!DisplayCharacterPicker(False)) {
+        if (!DisplayCharacterPicker(false)) {
             MsgBox, You didn't make a selection. The script will now exit.
             ExitApp, 1
         }
@@ -164,28 +165,29 @@ GetPoBPath() {
     }
 }
 
-GetBuildDir(changeDir = false) {
-    if (!BuildDir or !FileExist(BuildDir)) {
+GetBuildDir(force = true) {
+    if (!BuildDir or !FileExist(BuildDir))
         if (FileExist(PoBPath . "\Builds"))
             BuildDir := PoBPath . "\Builds"
-        else {
-            ; Force user to select the Builds Directory
-            DisplayInformation("Please select Character Build Directory")
-            FileSelectFolder, BuildDir, *%PoBPath%, , Select Character Build Directory
 
-            if (!BuildDir) {
-                MsgBox A Character Build Directory wasn't selected.  Please relaunch this program and select a Build Directory.
-                ExitApp, 1
-            }
-        }
-    }
-    else if (changeDir) {
-        tempDir := BuildDir
-        FileSelectFolder, BuildDir, *%PoBPath%, , Select Character Build Directory
+    tempDir := BuildDir
 
-        if (!BuildDir)
-            BuildDir := tempDir
+    if (force or !BuildDir)
+        FileSelectFolder, BuildDir, *%BuildDir%, 2, Select Character Build Directory
+
+    if (!BuildDir and !tempDir) {
+        MsgBox A Character Build Directory wasn't selected.  Please relaunch this program and select a Build Directory.
+        ExitApp, 1
     }
+
+    if (!BuildDir)
+        BuildDir := tempDir
+    ; Build path changed, character path is invalid now
+    else if (BuildDir != tempDir) {
+        GuiControl, CharacterPickerGUI:-Disabled, CharacterChangeCtrl
+        SaveCharacterFile("")
+    }
+
     IniWrite, %BuildDir%, %IniFile%, General, BuildDirectory
     GuiControl, CharacterPickerGUI:Text, CharacterDirectoryText, %BuildDir%
 }
@@ -264,9 +266,9 @@ DisplayInformation(string := "") {
     Gui, InfoWindowGUI:Show, X%posX% Y%posY% NoActivate
 }
 
-DisplayCharacterPicker(allowTemp) {
+GenerateCPList() {
     ListEntries =
-    ; Does not support folders in the Builds Directory
+
     loop Files, %BuildDir%\*.xml, R
     {
         CBFileName := SubStr(A_LoopFileLongPath, StrLen(BuildDir)+2, -4)
@@ -274,6 +276,10 @@ DisplayCharacterPicker(allowTemp) {
     }
 
     GuiControl, CharacterPickerGUI:Text, CharacterListCtrl, %ListEntries%
+}
+
+DisplayCharacterPicker(allowTemp = true) {
+    GenerateCPList()
 
     if (allowTemp)
         GuiControl, CharacterPickerGUI:-Disabled, CharacterChangeCtrl
