@@ -6,15 +6,16 @@
 ;--------------------------------------------------
 
 global LuaDir = "\ItemTester"
-global BuildDir = "\Builds"
 
 global IniFile = A_ScriptDir . "\TestItem.ini"
 global LuaJIT = A_ScriptDir . "\bin\luajit.exe"
 
-global PoBPath, CharacterFileName
+global PoBPath, CharacterFileName, BuildDir
 
 global InfoWindowGUI, InfoTextCtrl, InfoWindowHwnd
-global CharacterPickerGUI, CharacterCurrentCtrl, CharacterListCtrl, CharacterUpdateCtrl, CharacterChangeCtrl, CharacterPickerHwnd
+global CharacterPickerGUI, CharacterCurrentCtrl, CharacterListCtrl
+global CharacterUpdateCtrl, CharacterChangeCtrl, CharacterPickerHwnd
+global CharacterDirectoryText
 global ItemViewerGUI, ItemViewerCtrl, ItemViewerHwnd
 
 DetectHiddenWindows, On
@@ -45,6 +46,10 @@ CPCurrentCheck:
 CPListBox:
     if (A_GuiControlEvent = "DoubleClick")
         Gui, Submit
+    return
+
+ChangeDir:
+    GetBuildDir(true)
     return
 
 Ok:
@@ -94,15 +99,17 @@ Ok:
 CreateGUI() {
     ; Information Window
     Gui, InfoWindowGUI:New, +AlwaysOnTop -Border -MaximizeBox -MinimizeBox +LastFound +Disabled +HwndInfoWindowHwnd
-    Gui, InfoWindowGUI:Add, Text, vInfoTextCtrl Center, Please launch Path of Building ; Default control width
+    Gui, InfoWindowGUI:Add, Text, vInfoTextCtrl Center, Please select Character Build Directory ; Default control width
     Gui, InfoWindowGUI:Show, NoActivate Hide
 
     ; Character Picker
     Gui, CharacterPickerGUI:New, +HwndCharacterPickerHwnd -MaximizeBox -MinimizeBox, Pick You Character Build File
     Gui, CharacterPickerGUI:Margin, 8, 8
     Gui, CharacterPickerGUI:Add, Checkbox, vCharacterCurrentCtrl gCPCurrentCheck, Use PoB's last used build (since it last closed)
+    Gui, CharacterPickerGUI:Add, Button, gChangeDir, Change
+    Gui, CharacterPickerGUI:Add, Text, vCharacterDirectoryText x+5, Build Directory
     Gui, Font, s14
-    Gui, CharacterPickerGUI:Add, ListBox, vCharacterListCtrl gCPListBox r8 w300, %CharacterFileName%
+    Gui, CharacterPickerGUI:Add, ListBox, vCharacterListCtrl gCPListBox r8 w300 xm, %CharacterFileName%
     Gui, Font, s10
     Gui, CharacterPickerGUI:Add, Checkbox, vCharacterUpdateCtrl, Update Build before continuing
     Gui, CharacterPickerGUI:Add, Checkbox, vCharacterChangeCtrl Checked, Make this the default Build
@@ -118,15 +125,16 @@ CreateGUI() {
 
 SetVariablesAndFiles() {
     IniRead, PoBPath, %IniFile%, General, PathToPoB, %A_Space%
+    IniRead, BuildDir, %IniFile%, General, BuildDirectory, %A_Space%
     IniRead, CharacterFileName, %IniFile%, General, CharacterBuildFileName, %A_Space%
 
     ; Make sure PoB hasn't moved
     GetPoBPath()
+    GetBuildDir()
 
     SetWorkingDir, %PoBPath%
 
     LuaDir = %A_ScriptDir%%LuaDir%
-    BuildDir = %A_WorkingDir%%BuildDir%
     EnvSet, LUA_PATH, %POBPATH%\lua\?.lua;%LuaDir%\?.lua
 
     ; Make sure the Character file still exists
@@ -139,21 +147,47 @@ SetVariablesAndFiles() {
 }
 
 GetPoBPath() {
-    if !PoBPath or !FileExist(PoBPath . "\Path of Building.exe") {
+    if (!PoBPath or !FileExist(PoBPath . "\Path of Building.exe")) {
         if (!WinExist("Path of Building ahk_class SimpleGraphic Class"))
             DisplayInformation("Please launch Path of Building")
         WinWait, Path of Building ahk_class SimpleGraphic Class, , 300
         WinGet, FullPath, ProcessPath, Path of Building ahk_class SimpleGraphic Class
 
         if !FullPath {
-            MsgBox Path of Building not detected. Please relaunch this program and open Path of Building when requested
+            MsgBox Path of Building not detected.  Please relaunch this program and open Path of Building when requested
             ExitApp, 1
         }
         ; Get the PoB Directory from the PoB Path
         SplitPath, FullPath, , PoBPath
         IniWrite, %PoBPath%, %IniFile%, General, PathToPoB
-        Gui, InforWindowGUI:Hide
+        DisplayInformation()
     }
+}
+
+GetBuildDir(changeDir = false) {
+    if (!BuildDir or !FileExist(BuildDir)) {
+        if (FileExist(PoBPath . "\Builds"))
+            BuildDir := PoBPath . "\Builds"
+        else {
+            ; Force user to select the Builds Directory
+            DisplayInformation("Please select Character Build Directory")
+            FileSelectFolder, BuildDir, *%PoBPath%, , Select Character Build Directory
+
+            if (!BuildDir) {
+                MsgBox A Character Build Directory wasn't selected.  Please relaunch this program and select a Build Directory.
+                ExitApp, 1
+            }
+        }
+    }
+    else if (changeDir) {
+        tempDir := BuildDir
+        FileSelectFolder, BuildDir, *%PoBPath%, , Select Character Build Directory
+
+        if (!BuildDir)
+            BuildDir := tempDir
+    }
+    IniWrite, %BuildDir%, %IniFile%, General, BuildDirectory
+    GuiControl, CharacterPickerGUI:Text, CharacterDirectoryText, %BuildDir%
 }
 
 GetItemFromClipboard() {
