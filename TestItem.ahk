@@ -59,9 +59,8 @@ Ok:
 ; Test item from clipboard
 ^#c::
     Item := GetItemFromClipboard()
-    if (Item) {
+    if (Item)
         TestItemFromClipboard(Item)
-    }
     return
 
 ; Test item fom clipboard with character picker
@@ -69,9 +68,8 @@ Ok:
     Item := GetItemFromClipboard()
     if (Item) {
         filename := DisplayCharacterPicker(True)
-        if (filename) {
+        if (filename)
             TestItemFromClipboard(Item, filename)
-        }
     }
     return
 
@@ -83,7 +81,8 @@ Ok:
 ; Generate DPS search with character picker
 ^#!d::
     filename := DisplayCharacterPicker(True)
-    if (filename) GenerateDPSSearch(filename)
+    if (filename)
+        GenerateDPSSearch(filename)
     return
 
 ;--------------------------------------------------
@@ -265,7 +264,7 @@ DisplayCharacterPicker(allowTemp) {
     else if (CharacterListCtrl)
         CharacterListCtrl = % CharacterListCtrl . ".xml"
     else {
-        return False
+        return
     }
 
     ; Update the build before continuing
