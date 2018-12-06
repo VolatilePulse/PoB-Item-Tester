@@ -1,5 +1,8 @@
-﻿#persistent
+﻿#NoEnv
+#persistent
 #SingleInstance, force
+
+;#Warn
 
 ;--------------------------------------------------
 ; Initialization
@@ -13,9 +16,9 @@ global LuaJIT = A_ScriptDir . "\bin\luajit.exe"
 global PoBPath, CharacterFileName, BuildDir
 
 global InfoWindowGUI, InfoTextCtrl, InfoWindowHwnd
-global CharacterPickerGUI, CharacterCurrentCtrl, CharacterListCtrl
+global CharacterPickerGUI, CharacterCurrentCtrl, CharacterTVCtrl
 global CharacterUpdateCtrl, CharacterChangeCtrl, CharacterPickerHwnd
-global CharacterDirectoryText
+global CharacterDirectoryText, CharacterOKBtn
 global ItemViewerGUI, ItemViewerCtrl, ItemViewerHwnd
 
 DetectHiddenWindows, On
@@ -37,20 +40,32 @@ return
 
 CPCurrentCheck:
     GuiControlGet, isChecked, , CharacterCurrentCtrl
-    if (isChecked)
-        GuiControl, CharacterPickerGUI: +Disabled, CharacterListCtrl
-    else
-        GuiControl, CharacterPickerGUI: -Disabled, CharacterListCtrl
+    if (isChecked) {
+        GuiControl, CharacterPickerGUI: +Disabled, CharacterTVCtrl
+        GuiControl, CharacterPickerGUI: -Disabled +Default, CharacterOKBtn
+    }
+    else {
+        GuiControl, CharacterPickerGUI: -Disabled, CharacterTVCtrl
+        if (TV_GetChild(TV_GetSelection()))
+            GuiControl, CharacterPickerGUI: -Default +Disabled, CharacterOKBtn
+    }
     return
 
-CPListBox:
-    if (A_GuiControlEvent = "DoubleClick")
-        Gui, Submit
+CPTV:
+    if ((A_GuiEvent != "S") || (!TV_GetText(_, A_EventInfo)))
+        return
+
+    ; A character file has been selected
+    if (!TV_GetChild(A_EventInfo)) {
+        GuiControl, CharacterPickerGUI: +Default -Disabled, CharacterOKBtn
+    }
+    else
+        GuiControl, CharacterPickerGUI: -Default +Disabled, CharacterOKBtn
     return
 
 ChangeDir:
     GetBuildDir()
-    GenerateCPList()
+    CreateTV(BuildDir)
     return
 
 Ok:
@@ -97,6 +112,11 @@ Ok:
 
 ; Defines GUI layouts and forces Windows to render the GUI layouts
 CreateGUI() {
+    ; Create an ImageList for the TreeView
+    ImageListID := IL_Create(5)
+    Loop 5
+        IL_Add(ImageListID, "shell32.dll", A_Index)
+
     ; Information Window
     Gui, InfoWindowGUI:New, +AlwaysOnTop -Border -MaximizeBox -MinimizeBox +LastFound +Disabled +HwndInfoWindowHwnd
     Gui, InfoWindowGUI:Add, Text, vInfoTextCtrl Center, Please select Character Build Directory ; Default control width
@@ -108,12 +128,11 @@ CreateGUI() {
     Gui, CharacterPickerGUI:Add, Checkbox, vCharacterCurrentCtrl gCPCurrentCheck, Use PoB's last used build (since it last closed)
     Gui, CharacterPickerGUI:Add, Button, gChangeDir, Change
     Gui, CharacterPickerGUI:Add, Text, vCharacterDirectoryText x+5 ym+27 w300, Build Directory
-    Gui, Font, s14
-    Gui, CharacterPickerGUI:Add, ListBox, vCharacterListCtrl gCPListBox r8 w300 xm, %CharacterFileName%
-    Gui, Font, s10
+
+    Gui, CharacterPickerGUI:Add, TreeView, vCharacterTVCtrl gCPTV w300 r20 xm ImageList%ImageListID%
     Gui, CharacterPickerGUI:Add, Checkbox, vCharacterUpdateCtrl, Update Build before continuing
     Gui, CharacterPickerGUI:Add, Checkbox, vCharacterChangeCtrl Checked, Make this the default Build
-    Gui, CharacterPickerGUI:Add, Button, Default w50 gOK, OK
+    Gui, CharacterPickerGUI:Add, Button, vCharacterOKBtn Default w50 gOK, OK
     Gui, CharacterPickerGUI:Show, NoActivate Hide
 
     ; Item Viewer
@@ -195,12 +214,12 @@ GetItemFromClipboard() {
     ; Verify the information is what we're looking for
     if RegExMatch(clipboard, "Rarity: .*?\R.*?\R?.*?\R--------\R.*") = 0 {
         MsgBox "Not a PoE item"
-        return False
+        return false
     }
     return clipboard
 }
 
-TestItemFromClipboard(Item, FileName := False) {
+TestItemFromClipboard(Item, FileName := false) {
     ; If parameter is omitted, use the stored file name
     FileName := FileName ? FileName : CharacterFileName
 
@@ -218,7 +237,7 @@ TestItemFromClipboard(Item, FileName := False) {
     DisplayOutput()
 }
 
-GenerateDPSSearch(FileName := False) {
+GenerateDPSSearch(FileName := false) {
     ; If parameter is omitted, use the stored file name
     FileName := FileName ? FileName : CharacterFileName
 
@@ -229,7 +248,7 @@ GenerateDPSSearch(FileName := False) {
     DisplayInformation()
 }
 
-UpdateCharacterBuild(FileName := False) {
+UpdateCharacterBuild(FileName := false) {
     ; If parameter is omitted, use the stored file name
     FileName := FileName ? FileName : CharacterFileName
 
@@ -265,21 +284,59 @@ DisplayInformation(string := "") {
     Gui, InfoWindowGUI:Show, X%posX% Y%posY% NoActivate
 }
 
-GenerateCPList() {
-    CharacterListCtrl =
-    ListEntries =
+CreateTV(Folder, filePattern = "*.xml")
+{
+    Gui, CharacterPickerGUI:Default
+    GuiControl, CharacterPickerGUI:-Redraw, CharacterTVCtrl
+    TV_Delete() ; Clear the TreeView
+    fileList := []
+    dirTree := ["" = 0] ; 0 for top directory in TV
+    Folder .= (SubStr(Folder, 0) == "\" ? "" : "\") ; Directories aren't typically passed with trailing forward slash
 
-    loop Files, %BuildDir%\*.xml, R
+    Loop, Files, %Folder%%filePattern%, FR
     {
-        CBFileName := SubStr(A_LoopFileLongPath, StrLen(BuildDir)+2, -4)
-        ListEntries = %ListEntries%|%CBFileName%
-    }
+        tempPath := SubStr(A_LoopFileFullPath, StrLen(Folder) + 1)
+        fileList := fileList . tempPath . "`n"
 
-    GuiControl, CharacterPickerGUI:Text, CharacterListCtrl, %ListEntries%
+        SplitPath, tempPath, tempFile, tempDir
+
+        ; The directory has already been added
+        if (dirTree[tempDir])
+            continue
+
+        runningDir := ""
+        Loop, Parse, tempDir, "\"
+        {
+            if (runningDir)
+                newPath := runningDir . "\" . A_LoopField
+            else
+                newPath := A_LoopField
+
+            if (!dirTree[newPath])
+                dirTree[newPath] := TV_Add(A_LoopField, dirTree[runningDir], "Icon4")
+            runningDir := newPath
+        }
+    }
+    Sort, fileList
+    Loop, Parse, fileList, "`n"
+    {
+        if (!A_LoopField)
+            continue
+
+        SplitPath, A_LoopField, , tempDir, , tempName
+        TV_Add(tempName, dirTree[tempDir])
+    }
+    if (!TV_GetCount()) {
+        TV_Add("No Builds Found!", 0)
+    }
+    GuiControl, +Redraw, CharacterTVCtrl
 }
 
 DisplayCharacterPicker(allowTemp = true) {
-    GenerateCPList()
+    rtnVal := ""
+    CreateTV(BuildDir)
+    if (TV_GetChild(TV_GetSelection()))
+        GuiControl, CharacterPickerGUI: -Default +Disabled, CharacterOKBtn
 
     if (allowTemp)
         GuiControl, CharacterPickerGUI:-Disabled, CharacterChangeCtrl
@@ -300,22 +357,32 @@ DisplayCharacterPicker(allowTemp = true) {
 
     ; Set the Value to "CURRENT" instead of a specific path name
     if (CharacterCurrentCtrl)
-        CharacterListCtrl = CURRENT
-    ; Ignores bypassing a selection
-    else if (CharacterListCtrl)
-        CharacterListCtrl = % CharacterListCtrl . ".xml"
+        rtnVal := "CURRENT"
+
+    else if (true) {
+        TV_GetText(rtnVal, TV_GetSelection())
+        ParentID := TV_GetSelection()
+        Loop {
+            ParentID := TV_GetParent(ParentID)
+            if (!ParentID)
+                break
+            TV_GetText(ParentText, ParentID)
+            rtnVal := ParentText "\" rtnVal
+        }
+        rtnVal := rtnVal . ".xml"
+    }
     else
         return
 
     ; Update the build before continuing
     if (CharacterUpdateCtrl)
-        UpdateCharacterBuild(CharacterListCtrl)
+        UpdateCharacterBuild(rtnVal)
 
     ; Update the INI with the changes
     if (CharacterChangeCtrl)
-        SaveCharacterFile(CharacterListCtrl)
+        SaveCharacterFile(rtnVal)
 
-    return CharacterListCtrl
+    return rtnVal
 }
 
 DisplayOutput() {
