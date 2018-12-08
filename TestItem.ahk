@@ -8,24 +8,25 @@
 ; Initialization
 ;--------------------------------------------------
 
-global LuaDir = "\ItemTester"
+global _LuaDir := "\ItemTester"
 
-global IniFile = A_ScriptDir . "\TestItem.ini"
-global LuaJIT = A_ScriptDir . "\bin\luajit.exe"
+global _IniFile := A_ScriptDir . "\TestItem.ini"
+global _LuaJIT := A_ScriptDir . "\bin\luajit.exe"
 
-global PoBPath, CharacterFileName, BuildDir
-
-global InfoWindowGUI, InfoTextCtrl, InfoWindowHwnd
-global CharacterPickerGUI, CharacterCurrentCtrl, CharacterTVCtrl
-global CharacterUpdateCtrl, CharacterChangeCtrl, CharacterPickerHwnd
-global CharacterDirectoryText, CharacterOKBtn
-global ItemViewerGUI, ItemViewerCtrl, ItemViewerHwnd
 global _GUIOK := false
+global _PoBPath := "", _BuildDir = "", _CharacterFileName =""
+
+; Info Tooltip variables
+global _Info, _InfoHwnd, _InfoText
+; Character Picker GUI variables
+global _CP, _CPHwnd, _CPCurrent, _CPDir, _CPTV, _CPUpdate, _CPChange, _CPOK
+; Item Viewer variables
+global _Item, _ItemHwnd, _ItemText
 
 DetectHiddenWindows, On
 
 CreateGUI()
-SetVariablesAndFiles()
+SetVariablesAndFiles(_LuaDir, _PoBPath, _BuildDir, _CharacterFileName)
 
 DisplayInformation("Complete!")
 Sleep, 1000
@@ -40,15 +41,15 @@ return
 ;--------------------------------------------------
 
 CPCurrentCheck:
-    GuiControlGet, isChecked, , CharacterCurrentCtrl
+    GuiControlGet, isChecked, , _CPCurrent
     if (isChecked) {
-        GuiControl, CharacterPickerGUI: +Disabled, CharacterTVCtrl
-        GuiControl, CharacterPickerGUI: -Disabled +Default, CharacterOKBtn
+        GuiControl, _CP: +Disabled, _CPTV
+        GuiControl, _CP: -Disabled +Default, _CPOK
     }
     else {
-        GuiControl, CharacterPickerGUI: -Disabled, CharacterTVCtrl
+        GuiControl, _CP: -Disabled, _CPTV
         if (TV_GetChild(TV_GetSelection()))
-            GuiControl, CharacterPickerGUI: -Default +Disabled, CharacterOKBtn
+            GuiControl, _CP: -Default +Disabled, _CPOK
     }
     return
 
@@ -57,15 +58,14 @@ CPTV:
         return
 
     ; A character file has been selected
-    if (!TV_GetChild(A_EventInfo)) {
-        GuiControl, CharacterPickerGUI: +Default -Disabled, CharacterOKBtn
-    }
+    if (!TV_GetChild(A_EventInfo))
+        GuiControl, _CP: +Default -Disabled, _CPOK
     else
-        GuiControl, CharacterPickerGUI: -Default +Disabled, CharacterOKBtn
+        GuiControl, _CP: -Default +Disabled, _CPOK
     return
 
 ChangeDir:
-    CreateTV(GetBuildDir())
+    CreateTV(GetBuildDir(_PoBPath, _BuildDir))
     return
 
 Ok:
@@ -75,14 +75,14 @@ Ok:
 
 ; Re-import build (update)
 +^u::
-    UpdateCharacterBuild()
+    UpdateCharacterBuild((_CharacterFileName == "CURRENT") ? "CURRENT" : _BuildDir "\" _CharacterFileName)
     return
 
 ; Test item from clipboard
 ^#c::
     Item := GetItemFromClipboard()
     if (Item)
-        TestItemFromClipboard((CharacterFileName == "CURRENT") ? "CURRENT" : BuildDir "\" CharacterFileName, Item)
+        TestItemFromClipboard((_CharacterFileName == "CURRENT") ? "CURRENT" : _BuildDir "\" _CharacterFileName, Item)
     return
 
 ; Test item fom clipboard with character picker
@@ -97,7 +97,7 @@ Ok:
 
 ; Generate DPS search
 ^#d::
-    GenerateDPSSearch((CharacterFileName == "CURRENT") ? "CURRENT" : BuildDir "\" CharacterFileName)
+    GenerateDPSSearch((_CharacterFileName == "CURRENT") ? "CURRENT" : _BuildDir "\" _CharacterFileName)
     return
 
 ; Generate DPS search with character picker
@@ -119,46 +119,45 @@ CreateGUI() {
         IL_Add(ImageListID, "shell32.dll", A_Index)
 
     ; Information Window
-    Gui, InfoWindowGUI:New, +AlwaysOnTop -Border -MaximizeBox -MinimizeBox +LastFound +Disabled +HwndInfoWindowHwnd
-    Gui, InfoWindowGUI:Add, Text, vInfoTextCtrl Center, Please select Character Build Directory ; Default control width
-    Gui, InfoWindowGUI:Show, NoActivate Hide
+    Gui, _Info:New, +AlwaysOnTop -Border -MaximizeBox -MinimizeBox +LastFound +Disabled +Hwnd_InfoHwnd
+    Gui, _Info:Add, Text, v_InfoText Center, Please select Character Build Directory ; Default control width
+    Gui, _Info:Show, NoActivate Hide
 
     ; Character Picker
-    Gui, CharacterPickerGUI:New, +HwndCharacterPickerHwnd -MaximizeBox -MinimizeBox, Pick You Character Build File
-    Gui, CharacterPickerGUI:Margin, 8, 8
-    Gui, CharacterPickerGUI:Add, Checkbox, vCharacterCurrentCtrl gCPCurrentCheck, Use PoB's last used build (since it last closed)
-    Gui, CharacterPickerGUI:Add, Button, gChangeDir, Change
-    Gui, CharacterPickerGUI:Add, Text, vCharacterDirectoryText x+5 ym+27 w300, Build Directory
-
-    Gui, CharacterPickerGUI:Add, TreeView, vCharacterTVCtrl gCPTV w300 r20 xm ImageList%ImageListID%
-    Gui, CharacterPickerGUI:Add, Checkbox, vCharacterUpdateCtrl, Update Build before continuing
-    Gui, CharacterPickerGUI:Add, Checkbox, vCharacterChangeCtrl Checked, Make this the default Build
-    Gui, CharacterPickerGUI:Add, Button, vCharacterOKBtn Default w50 gOK, OK
-    Gui, CharacterPickerGUI:Show, NoActivate Hide
+    Gui, _CP:New, +Hwnd_CPHwnd -MaximizeBox -MinimizeBox, Pick You Character Build File
+    Gui, _CP:Margin, 8, 8
+    Gui, _CP:Add, Checkbox, v_CPCurrent gCPCurrentCheck, Use PoB's last used build (since it last closed)
+    Gui, _CP:Add, Button, gChangeDir, Change
+    Gui, _CP:Add, Text, v_CPDir x+5 ym+27 w300, Build Directory
+    Gui, _CP:Add, TreeView, v_CPTV gCPTV w300 r20 xm ImageList%ImageListID%
+    Gui, _CP:Add, Checkbox, v_CPUpdate, Update Build before continuing
+    Gui, _CP:Add, Checkbox, v_CPChange Checked, Make this the default Build
+    Gui, _CP:Add, Button, v_CPOK Default w50 gOK, OK
+    Gui, _CP:Show, NoActivate Hide
 
     ; Item Viewer
-    Gui, ItemViewerGUI:New, +AlwaysOnTop +HwndItemViewerHwnd, PoB Item Tester
-    Gui, ItemViewerGUI:Add, ActiveX, x0 y0 w400 h500 vItemViewerCtrl, Shell.Explorer
-    ItemViewerCtrl.silent := True
-    Gui, ItemViewerGUI:Show, NoActivate Hide
+    Gui, _Item:New, +AlwaysOnTop +Hwnd_ItemHwnd, PoB Item Tester
+    Gui, _Item:Add, ActiveX, x0 y0 w400 h500 v_ItemText, Shell.Explorer
+    _ItemText.silent := true
+    Gui, _Item:Show, NoActivate Hide
 }
 
-SetVariablesAndFiles() {
-    IniRead, PoBPath, %IniFile%, General, PathToPoB, %A_Space%
-    IniRead, BuildDir, %IniFile%, General, BuildDirectory, %A_Space%
-    IniRead, CharacterFileName, %IniFile%, General, CharacterBuildFileName, %A_Space%
+SetVariablesAndFiles(byRef luaDir, byRef pobPath, byRef buildDir, byRef fileName) {
+    IniRead, pobPath, %_IniFile%, General, PathToPoB, %A_Space%
+    IniRead, buildDir, %_IniFile%, General, BuildDirectory, %A_Space%
+    IniRead, fileName, %_IniFile%, General, CharacterBuildFileName, %A_Space%
 
     ; Make sure PoB hasn't moved
-    GetPoBPath()
-    SaveBuildDirectory(GetBuildDir(false))
+    GetPoBPath(pobPath)
+    SaveBuildDirectory(GetBuildDir(pobPath, buildDir, false))
 
-    SetWorkingDir, %PoBPath%
+    SetWorkingDir, %pobPath%
 
-    LuaDir = %A_ScriptDir%%LuaDir%
-    EnvSet, LUA_PATH, %POBPATH%\lua\?.lua;%LuaDir%\?.lua
+    luaDir := A_ScriptDir . luaDir
+    EnvSet, LUA_PATH, %pobPath%\lua\?.lua;%luaDir%\?.lua
 
     ; Make sure the Character file still exists
-    if (CharacterFileName <> "CURRENT" and !(CharacterFileName and FileExist(BuildDir . "\" . CharacterFileName))) {
+    if (fileName <> "CURRENT" and !(fileName and FileExist(buildDir "\" fileName))) {
         if (!DisplayCharacterPicker(false)) {
             MsgBox, You didn't make a selection. The script will now exit.
             ExitApp, 1
@@ -166,10 +165,11 @@ SetVariablesAndFiles() {
     }
 }
 
-GetPoBPath() {
-    if (!PoBPath or !FileExist(PoBPath . "\Path of Building.exe")) {
+GetPoBPath(byRef pobPath) {
+    if (!pobPath or !FileExist(pobPath . "\Path of Building.exe")) {
         if (!WinExist("Path of Building ahk_class SimpleGraphic Class"))
             DisplayInformation("Please launch Path of Building")
+
         WinWait, Path of Building ahk_class SimpleGraphic Class, , 300
         WinGet, FullPath, ProcessPath, Path of Building ahk_class SimpleGraphic Class
 
@@ -178,22 +178,22 @@ GetPoBPath() {
             ExitApp, 1
         }
         ; Get the PoB Directory from the PoB Path
-        SplitPath, FullPath, , PoBPath
-        IniWrite, %PoBPath%, %IniFile%, General, PathToPoB
+        SplitPath, FullPath, , pobPath
+        IniWrite, %pobPath%, %_IniFile%, General, PathToPoB
         DisplayInformation()
     }
 }
 
-GetBuildDir(force = true) {
-    if (!BuildDir or !FileExist(BuildDir))
-        if (FileExist(PoBPath . "\Builds"))
-            BuildDir := PoBPath . "\Builds"
+GetBuildDir(pobPath, byRef buildDir, force = true) {
+    if (!buildDir or !FileExist(buildDir))
+        if (FileExist(pobPath "\Builds"))
+            buildDir := pobPath "\Builds"
 
     newDir := ""
-    tempDir := BuildDir
+    tempDir := buildDir
 
-    if (force or !BuildDir)
-        FileSelectFolder, newDir, *%BuildDir%, 2, Select Character Build Directory
+    if (force or !buildDir)
+        FileSelectFolder, newDir, *%buildDir%, 2, Select Character Build Directory
 
     if (!newDir and !tempDir) {
         MsgBox A Character Build Directory wasn't selected.  Please relaunch this program and select a Build Directory.
@@ -203,7 +203,7 @@ GetBuildDir(force = true) {
     if (!newDir)
         newDir := tempDir
 
-    GuiControl, CharacterPickerGUI:Text, CharacterDirectoryText, %newDir%
+    GuiControl, _CP:Text, _CPDir, %newDir%
     return newDir
 }
 
@@ -216,73 +216,71 @@ GetItemFromClipboard() {
     return clipboard
 }
 
-TestItemFromClipboard(Item, FileName := false) {
-    DisplayInformation("Parsing Item Data...")
+TestItemFromClipboard(item, fullPath) {
     ; Erase old content first
     FileDelete, %A_Temp%\PoBTestItem.txt
     FileDelete, %A_Temp%\PoBTestItem.txt.html
-    FileAppend, %Item%, %A_Temp%\PoBTestItem.txt
+    FileAppend, %item%, %A_Temp%\PoBTestItem.txt
 
-    if (FileName <> "CURRENT")
-        FileName = % BuildDir . "\" . FileName
-
-    RunWait, "%LuaJIT%" "%LuaDir%\TestItem.lua" "%FileName%" "%A_Temp%\PoBTestItem.txt", , Hide
+    DisplayInformation("Parsing Item Data...")
+    RunWait, "%_LuaJIT%" "%_LuaDir%\TestItem.lua" "%fullPath%" "%A_Temp%\PoBTestItem.txt", , Hide
     DisplayInformation()
     DisplayOutput()
 }
 
-GenerateDPSSearch(FileName := false) {
+GenerateDPSSearch(fullPath) {
     DisplayInformation("Generating DPS search...")
-    RunWait, "%LuaJIT%" "%LuaDir%\SearchDPS.lua" "%FileName%", , Hide
+    RunWait, "%_LuaJIT%" "%_LuaDir%\SearchDPS.lua" "%fullPath%", , Hide
     DisplayInformation()
 }
 
-UpdateCharacterBuild(FileName := false) {
+UpdateCharacterBuild(fullPath) {
     DisplayInformation("Updating Character Build")
-    RunWait, "%LuaJIT%" "%LuaDir%\UpdateBuild.lua" "%FileName%", , Hide
+    RunWait, "%_LuaJIT%" "%_LuaDir%\UpdateBuild.lua" "%fullPath%", , Hide
     DisplayInformation()
 }
 
-SaveBuildDirectory(newDirectory) {
-    BuildDir := newDirectory
-    IniWrite, %newDirectory%, %IniFile%, General, BuildDirectory
+SaveBuildDirectory(byRef buildDir, newDirectory) {
+    buildDir := newDirectory
+    IniWrite, %newDirectory%, %_IniFile%, General, BuildDirectory
 }
 
-SaveCharacterFile(NewFileName) {
-    CharacterFileName = %NewFileName%
-    IniWrite, %NewFileName%, %IniFile%, General, CharacterBuildFileName
+SaveCharacterFile(byRef fileName, newFile) {
+    fileName := newFile
+    IniWrite, %newFile%, %_IniFile%, General, CharacterBuildFileName
 }
 
-SortArray(Array, Order="A") {
-    ;Order A: Ascending, D: Descending, R: Reverse
-    MaxIndex := ObjMaxIndex(Array)
-    if (Order = "R") {
+SortArray(array, order := "A") {
+    ; Order A: Ascending, D: Descending, R: Reverse
+    maxIndex := ObjMaxIndex(array)
+    if (order = "R") {
         count := 0
-        loop, % MaxIndex
-            ObjInsert(Array, ObjRemove(Array, MaxIndex - count++))
-        Return
+        loop, % maxIndex
+            ObjInsert(array, ObjRemove(array, maxIndex - count ++))
+        return
     }
-    Partitions := "|" ObjMinIndex(Array) "," MaxIndex
+    partitions := "|" ObjMinIndex(array) "," maxIndex
     loop {
-        comma := InStr(this_partition := SubStr(Partitions, InStr(Partitions, "|", False, 0)+1), ",")
-        spos := pivot := SubStr(this_partition, 1, comma-1) , epos := SubStr(this_partition, comma+1)
-        if (Order = "A") {
+        comma := InStr(this_partition := SubStr(partitions, InStr(partitions, "|", false, 0) + 1), ",")
+        spos := pivot := SubStr(this_partition, 1, comma - 1) , epos := SubStr(this_partition, comma + 1)
+        if (order = "A") {
             loop, % epos - spos {
-                if (Array[pivot] > Array[A_Index+spos])
-                    ObjInsert(Array, pivot++, ObjRemove(Array, A_Index+spos))
-            }
-        } else {
-            loop, % epos - spos {
-                if (Array[pivot] < Array[A_Index+spos])
-                    ObjInsert(Array, pivot++, ObjRemove(Array, A_Index+spos))
+                if (array[pivot] > array[A_Index + spos])
+                    ObjInsert(array, pivot ++, ObjRemove(array, A_Index + spos))
             }
         }
-        Partitions := SubStr(Partitions, 1, InStr(Partitions, "|", False, 0)-1)
+        else {
+            loop, % epos - spos {
+                if (array[pivot] < array[A_Index + spos])
+                    ObjInsert(array, pivot ++, ObjRemove(array, A_Index + spos))
+            }
+        }
+        partitions := SubStr(partitions, 1, InStr(partitions, "|", false, 0) - 1)
         if (pivot - spos) > 1    ;if more than one elements
-            Partitions .= "|" spos "," pivot-1        ;the left partition
+            partitions .= "|" spos "," pivot - 1        ;the left partition
         if (epos - pivot) > 1    ;if more than one elements
-            Partitions .= "|" pivot+1 "," epos        ;the right partition
-    } until !Partitions
+            partitions .= "|" pivot + 1 "," epos        ;the right partition
+    } until !partitions
 }
 
 ;--------------------------------------------------
@@ -291,31 +289,30 @@ SortArray(Array, Order="A") {
 DisplayInformation(string := "") {
     ; Hide the Information Window
     if (!string) {
-        Gui, InfoWindowGUI:Hide
+        Gui, _Info:Hide
         return
     }
 
-    GuiControl, InfoWindowGUI:Text, InfoTextCtrl, %string%
+    GuiControl, _Info:Text, _InfoText, %string%
 
     WinGetPos, winX, winY, winW, winH, A
-    WinGetPos, , , guiW, guiH, ahk_id %InfoWindowHwnd%
-    posX = % winX + (winW - guiW) / 2
-    posY = % winY + 50
-    Gui, InfoWindowGUI:Show, X%posX% Y%posY% NoActivate
+    WinGetPos, , , guiW, guiH, ahk_id %_InfoHwnd%
+    posX := winX + (winW - guiW) / 2
+    posY := winY + 50
+    Gui, _Info:Show, X%posX% Y%posY% NoActivate
 }
 
-CreateTV(Folder, filePattern = "*.xml")
-{
-    Gui, CharacterPickerGUI:Default
-    GuiControl, CharacterPickerGUI:-Redraw, CharacterTVCtrl
+CreateTV(folder, filePattern = "*.xml") {
+    Gui, _CP:Default
+    GuiControl, _CP:-Redraw, _CPTV
     TV_Delete() ; Clear the TreeView
     fileList := []
     dirTree := ["" = 0] ; 0 for top directory in TV
-    Folder .= (SubStr(Folder, 0) == "\" ? "" : "\") ; Directories aren't typically passed with trailing forward slash
+    folder .= (SubStr(folder, 0) == "\" ? "" : "\") ; Directories aren't typically passed with trailing forward slash
 
-    loop, Files, %Folder%%filePattern%, FR
+    loop, Files, %folder%%filePattern%, FR
     {
-        tempPath := SubStr(A_loopFileFullPath, StrLen(Folder) + 1)
+        tempPath := SubStr(A_loopFileFullPath, StrLen(folder) + 1)
         fileList.push(tempPath)
 
         SplitPath, tempPath, tempFile, tempDir
@@ -325,7 +322,7 @@ CreateTV(Folder, filePattern = "*.xml")
             continue
 
         runningDir := ""
-        Loop, Parse, tempDir, "\"
+        loop, Parse, tempDir, "\"
         {
             if (runningDir)
                 newPath := runningDir . "\" . A_LoopField
@@ -341,76 +338,74 @@ CreateTV(Folder, filePattern = "*.xml")
     SortArray(fileList)
     for index, file in fileList {
         SplitPath, file, , tempDir, , tempName
-        if ((Folder . file) != (BuildDir . "\" . CharacterFileName))
+
+        if ((folder . file) != (_BuildDir "\" _CharacterFileName))
             TV_Add(tempName, dirTree[tempDir])
         else
             TV_Add(tempName, dirTree[tempDir], "Select")
     }
-    if (!TV_GetCount()) {
-        TV_Add("No Builds Found!", 0)
-    }
-    GuiControl, +Redraw, CharacterTVCtrl
+
+    GuiControl, _CP:+Redraw, _CPTV
 }
 
 DisplayCharacterPicker(allowTemp = true) {
-    rtnVal := ""
     _GUIOK := false
-    GuiControl, CharacterPickerGUI:Text, CharacterDirectoryText, %BuildDir%
+    rtnVal := ""
+    GuiControl, _CP:Text, _CPDir, %_BuildDir%
 
-    CreateTV(BuildDir)
+    CreateTV(_BuildDir)
     if (TV_GetChild(TV_GetSelection()))
-        GuiControl, CharacterPickerGUI: -Default +Disabled, CharacterOKBtn
+        GuiControl, _CP:-Default +Disabled, _CPOK
 
     if (allowTemp)
-        GuiControl, CharacterPickerGUI:-Disabled, CharacterChangeCtrl
+        GuiControl, _CP:-Disabled, _CPChange
     else
-        GuiControl, CharacterPickerGUI:+Disabled, CharacterChangeCtrl
+        GuiControl, _CP:+Disabled, _CPChange
 
     ; Move CharacterPicker to the center of the currently active window
     WinGetPos, winX, winY, winW, winH, A
-    WinGetPos, , , guiW, guiH, ahk_id %CharacterPickerHwnd%
-    posX = % winX + (winW - guiW) / 2
-    posY = % winY + (winH - guiH) / 2
-    Gui, CharacterPickerGUI:Show, X%posX% Y%posY%
+    WinGetPos, , , guiW, guiH, ahk_id %_CPHwnd%
+    posX := winX + (winW - guiW) / 2
+    posY := winY + (winH - guiH) / 2
+    Gui, _CP:Show, X%posX% Y%posY%
 
     DetectHiddenWindows, Off
-    WinWait, ahk_id %CharacterPickerHwnd%
-    WinWaitClose, ahk_id %CharacterPickerHwnd%
+    WinWait, ahk_id %_CPHwnd%
+    WinWaitClose, ahk_id %_CPHwnd%
     DetectHiddenWindows, On
 
     if (!_GUIOK)
         return ""
 
-    GuiControlGet, curDirectory, , CharacterDirectoryText
+    GuiControlGet, curDirectory, , _CPDir
 
     ; Set the Value to "CURRENT" instead of a specific path name
-    if (CharacterCurrentCtrl)
+    if (_CPCurrent)
         rtnVal := "CURRENT"
-
     else {
         TV_GetText(rtnVal, TV_GetSelection())
-        ParentID := TV_GetSelection()
+        parentID := TV_GetSelection()
         loop {
-            ParentID := TV_GetParent(ParentID)
-            if (!ParentID)
+            parentID := TV_GetParent(parentID)
+            if (!parentID)
                 break
-            TV_GetText(ParentText, ParentID)
-            rtnVal := ParentText "\" rtnVal
+            TV_GetText(parentText, parentID)
+            rtnVal := parentText "\" rtnVal
         }
-        rtnVal := rtnVal . ".xml"
+        rtnVal := rtnVal ".xml"
     }
 
     ; Update the INI with the changes
-    if (CharacterChangeCtrl) {
-        SaveCharacterFile(rtnVal)
-        SaveBuildDirectory(curDirectory)
+    if (_CPChange) {
+        SaveCharacterFile(_CharacterFileName, rtnVal)
+        SaveBuildDirectory(_BuildDir,curDirectory)
     }
 
     if (rtnVal != "CURRENT")
         rtnVal := curDirectory "\" rtnVal
 
     ; Update the build before continuing
-    if (CharacterUpdateCtrl)
+    if (_CPUpdate)
         UpdateCharacterBuild(rtnVal)
 
     return rtnVal
@@ -422,16 +417,17 @@ DisplayOutput() {
         return
     }
 
-    ItemViewerCtrl.Navigate("file://" . A_Temp . "\PoBTestItem.txt.html")
-    while ItemViewerCtrl.busy or ItemViewerCtrl.ReadyState != 4
+    _ItemText.Navigate("file://" . A_Temp . "\PoBTestItem.txt.html")
+    while _ItemText.busy or _ItemText.ReadyState != 4
         Sleep 10
+
     WinGetPos, winX, winY, winW, winH, A
-    Gui, ItemViewerGUI:+LastFound
-    WinGetPos, , , guiW, guiH, ahk_id %ItemViewerHwnd%
+    Gui, _Item:+LastFound
+    WinGetPos, , , guiW, guiH, ahk_id %_ItemHwnd%
     MouseGetPos, mouseX, mouseY
-    posX = % ((mouseX > (winX + winW / 2)) ? (winX + winW * 0.25 - guiW * 0.5) : (winX + winW * 0.75 - guiW * 0.5))
-    posY = % ((mouseY > (winY + winH / 2)) ? (winY + winH * 0.25 - guiH * 0.5) : (winY + winH * 0.75 - guiH * 0.5))
-    Gui, ItemViewerGUI:Show, w400 h500 X%posX% Y%posY% NoActivate
+    posX := ((mouseX > (winX + winW / 2)) ? (winX + winW * 0.25 - guiW * 0.5) : (winX + winW * 0.75 - guiW * 0.5))
+    posY := ((mouseY > (winY + winH / 2)) ? (winY + winH * 0.25 - guiH * 0.5) : (winY + winH * 0.75 - guiH * 0.5))
+    Gui, _Item:Show, w400 h500 X%posX% Y%posY% NoActivate
 }
 
 ExitFunc() {
