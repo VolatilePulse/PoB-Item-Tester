@@ -82,7 +82,7 @@ Ok:
 ^#c::
     Item := GetItemFromClipboard()
     if (Item)
-        TestItemFromClipboard((_CharacterFileName == "CURRENT") ? "CURRENT" : _BuildDir "\" _CharacterFileName, Item)
+        TestItemFromClipboard(Item, (_CharacterFileName == "CURRENT") ? "CURRENT" : _BuildDir "\" _CharacterFileName)
     return
 
 ; Test item fom clipboard with character picker
@@ -149,7 +149,7 @@ SetVariablesAndFiles(byRef luaDir, byRef pobPath, byRef buildDir, byRef fileName
 
     ; Make sure PoB hasn't moved
     GetPoBPath(pobPath)
-    SaveBuildDirectory(GetBuildDir(pobPath, buildDir, false))
+    SaveBuildDirectory(buildDir, GetBuildDir(pobPath, buildDir, false))
 
     SetWorkingDir, %pobPath%
 
@@ -398,7 +398,7 @@ DisplayCharacterPicker(allowTemp = true) {
     ; Update the INI with the changes
     if (_CPChange) {
         SaveCharacterFile(_CharacterFileName, rtnVal)
-        SaveBuildDirectory(_BuildDir,curDirectory)
+        SaveBuildDirectory(_BuildDir, curDirectory)
     }
 
     if (rtnVal != "CURRENT")
