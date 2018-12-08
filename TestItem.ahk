@@ -20,6 +20,7 @@ global CharacterPickerGUI, CharacterCurrentCtrl, CharacterTVCtrl
 global CharacterUpdateCtrl, CharacterChangeCtrl, CharacterPickerHwnd
 global CharacterDirectoryText, CharacterOKBtn
 global ItemViewerGUI, ItemViewerCtrl, ItemViewerHwnd
+global _GUIOK := false
 
 DetectHiddenWindows, On
 
@@ -64,11 +65,11 @@ CPTV:
     return
 
 ChangeDir:
-    GetBuildDir()
-    CreateTV(BuildDir)
+    CreateTV(GetBuildDir())
     return
 
 Ok:
+    _GUIOK := true
     Gui, Submit
     return
 
@@ -81,7 +82,7 @@ Ok:
 ^#c::
     Item := GetItemFromClipboard()
     if (Item)
-        TestItemFromClipboard(Item)
+        TestItemFromClipboard((CharacterFileName == "CURRENT") ? "CURRENT" : BuildDir "\" CharacterFileName, Item)
     return
 
 ; Test item fom clipboard with character picker
@@ -96,7 +97,7 @@ Ok:
 
 ; Generate DPS search
 ^#d::
-    GenerateDPSSearch()
+    GenerateDPSSearch((CharacterFileName == "CURRENT") ? "CURRENT" : BuildDir "\" CharacterFileName)
     return
 
 ; Generate DPS search with character picker
@@ -114,7 +115,7 @@ Ok:
 CreateGUI() {
     ; Create an ImageList for the TreeView
     ImageListID := IL_Create(5)
-    Loop 5
+    loop 5
         IL_Add(ImageListID, "shell32.dll", A_Index)
 
     ; Information Window
@@ -149,7 +150,7 @@ SetVariablesAndFiles() {
 
     ; Make sure PoB hasn't moved
     GetPoBPath()
-    GetBuildDir(false)
+    SaveBuildDirectory(GetBuildDir(false))
 
     SetWorkingDir, %PoBPath%
 
@@ -188,26 +189,22 @@ GetBuildDir(force = true) {
         if (FileExist(PoBPath . "\Builds"))
             BuildDir := PoBPath . "\Builds"
 
+    newDir := ""
     tempDir := BuildDir
 
     if (force or !BuildDir)
-        FileSelectFolder, BuildDir, *%BuildDir%, 2, Select Character Build Directory
+        FileSelectFolder, newDir, *%BuildDir%, 2, Select Character Build Directory
 
-    if (!BuildDir and !tempDir) {
+    if (!newDir and !tempDir) {
         MsgBox A Character Build Directory wasn't selected.  Please relaunch this program and select a Build Directory.
         ExitApp, 1
     }
 
-    if (!BuildDir)
-        BuildDir := tempDir
-    ; Build path changed, character path is invalid now
-    else if (BuildDir != tempDir) {
-        GuiControl, CharacterPickerGUI:-Disabled, CharacterChangeCtrl
-        SaveCharacterFile("")
-    }
+    if (!newDir)
+        newDir := tempDir
 
-    IniWrite, %BuildDir%, %IniFile%, General, BuildDirectory
-    GuiControl, CharacterPickerGUI:Text, CharacterDirectoryText, %BuildDir%
+    GuiControl, CharacterPickerGUI:Text, CharacterDirectoryText, %newDir%
+    return newDir
 }
 
 GetItemFromClipboard() {
@@ -220,9 +217,6 @@ GetItemFromClipboard() {
 }
 
 TestItemFromClipboard(Item, FileName := false) {
-    ; If parameter is omitted, use the stored file name
-    FileName := FileName ? FileName : CharacterFileName
-
     DisplayInformation("Parsing Item Data...")
     ; Erase old content first
     FileDelete, %A_Temp%\PoBTestItem.txt
@@ -238,31 +232,57 @@ TestItemFromClipboard(Item, FileName := false) {
 }
 
 GenerateDPSSearch(FileName := false) {
-    ; If parameter is omitted, use the stored file name
-    FileName := FileName ? FileName : CharacterFileName
-
-    if (FileName <> "CURRENT")
-        FileName = % BuildDir . "\" . FileName
     DisplayInformation("Generating DPS search...")
     RunWait, "%LuaJIT%" "%LuaDir%\SearchDPS.lua" "%FileName%", , Hide
     DisplayInformation()
 }
 
 UpdateCharacterBuild(FileName := false) {
-    ; If parameter is omitted, use the stored file name
-    FileName := FileName ? FileName : CharacterFileName
-
-    if (FileName <> "CURRENT")
-        FileName = % BuildDir . "\" . FileName
-
     DisplayInformation("Updating Character Build")
     RunWait, "%LuaJIT%" "%LuaDir%\UpdateBuild.lua" "%FileName%", , Hide
     DisplayInformation()
 }
 
+SaveBuildDirectory(newDirectory) {
+    BuildDir := newDirectory
+    IniWrite, %newDirectory%, %IniFile%, General, BuildDirectory
+}
+
 SaveCharacterFile(NewFileName) {
     CharacterFileName = %NewFileName%
     IniWrite, %NewFileName%, %IniFile%, General, CharacterBuildFileName
+}
+
+SortArray(Array, Order="A") {
+    ;Order A: Ascending, D: Descending, R: Reverse
+    MaxIndex := ObjMaxIndex(Array)
+    if (Order = "R") {
+        count := 0
+        loop, % MaxIndex
+            ObjInsert(Array, ObjRemove(Array, MaxIndex - count++))
+        Return
+    }
+    Partitions := "|" ObjMinIndex(Array) "," MaxIndex
+    loop {
+        comma := InStr(this_partition := SubStr(Partitions, InStr(Partitions, "|", False, 0)+1), ",")
+        spos := pivot := SubStr(this_partition, 1, comma-1) , epos := SubStr(this_partition, comma+1)
+        if (Order = "A") {
+            loop, % epos - spos {
+                if (Array[pivot] > Array[A_Index+spos])
+                    ObjInsert(Array, pivot++, ObjRemove(Array, A_Index+spos))
+            }
+        } else {
+            loop, % epos - spos {
+                if (Array[pivot] < Array[A_Index+spos])
+                    ObjInsert(Array, pivot++, ObjRemove(Array, A_Index+spos))
+            }
+        }
+        Partitions := SubStr(Partitions, 1, InStr(Partitions, "|", False, 0)-1)
+        if (pivot - spos) > 1    ;if more than one elements
+            Partitions .= "|" spos "," pivot-1        ;the left partition
+        if (epos - pivot) > 1    ;if more than one elements
+            Partitions .= "|" pivot+1 "," epos        ;the right partition
+    } until !Partitions
 }
 
 ;--------------------------------------------------
@@ -293,10 +313,10 @@ CreateTV(Folder, filePattern = "*.xml")
     dirTree := ["" = 0] ; 0 for top directory in TV
     Folder .= (SubStr(Folder, 0) == "\" ? "" : "\") ; Directories aren't typically passed with trailing forward slash
 
-    Loop, Files, %Folder%%filePattern%, FR
+    loop, Files, %Folder%%filePattern%, FR
     {
-        tempPath := SubStr(A_LoopFileFullPath, StrLen(Folder) + 1)
-        fileList := fileList . tempPath . "`n"
+        tempPath := SubStr(A_loopFileFullPath, StrLen(Folder) + 1)
+        fileList.push(tempPath)
 
         SplitPath, tempPath, tempFile, tempDir
 
@@ -317,14 +337,14 @@ CreateTV(Folder, filePattern = "*.xml")
             runningDir := newPath
         }
     }
-    Sort, fileList
-    Loop, Parse, fileList, "`n"
-    {
-        if (!A_LoopField)
-            continue
 
-        SplitPath, A_LoopField, , tempDir, , tempName
-        TV_Add(tempName, dirTree[tempDir])
+    SortArray(fileList)
+    for index, file in fileList {
+        SplitPath, file, , tempDir, , tempName
+        if ((Folder . file) != (BuildDir . "\" . CharacterFileName))
+            TV_Add(tempName, dirTree[tempDir])
+        else
+            TV_Add(tempName, dirTree[tempDir], "Select")
     }
     if (!TV_GetCount()) {
         TV_Add("No Builds Found!", 0)
@@ -334,6 +354,9 @@ CreateTV(Folder, filePattern = "*.xml")
 
 DisplayCharacterPicker(allowTemp = true) {
     rtnVal := ""
+    _GUIOK := false
+    GuiControl, CharacterPickerGUI:Text, CharacterDirectoryText, %BuildDir%
+
     CreateTV(BuildDir)
     if (TV_GetChild(TV_GetSelection()))
         GuiControl, CharacterPickerGUI: -Default +Disabled, CharacterOKBtn
@@ -355,14 +378,19 @@ DisplayCharacterPicker(allowTemp = true) {
     WinWaitClose, ahk_id %CharacterPickerHwnd%
     DetectHiddenWindows, On
 
+    if (!_GUIOK)
+        return ""
+
+    GuiControlGet, curDirectory, , CharacterDirectoryText
+
     ; Set the Value to "CURRENT" instead of a specific path name
     if (CharacterCurrentCtrl)
         rtnVal := "CURRENT"
 
-    else if (true) {
+    else {
         TV_GetText(rtnVal, TV_GetSelection())
         ParentID := TV_GetSelection()
-        Loop {
+        loop {
             ParentID := TV_GetParent(ParentID)
             if (!ParentID)
                 break
@@ -371,16 +399,19 @@ DisplayCharacterPicker(allowTemp = true) {
         }
         rtnVal := rtnVal . ".xml"
     }
-    else
-        return
+
+    ; Update the INI with the changes
+    if (CharacterChangeCtrl) {
+        SaveCharacterFile(rtnVal)
+        SaveBuildDirectory(curDirectory)
+    }
+
+    if (rtnVal != "CURRENT")
+        rtnVal := curDirectory "\" rtnVal
 
     ; Update the build before continuing
     if (CharacterUpdateCtrl)
         UpdateCharacterBuild(rtnVal)
-
-    ; Update the INI with the changes
-    if (CharacterChangeCtrl)
-        SaveCharacterFile(rtnVal)
 
     return rtnVal
 }
