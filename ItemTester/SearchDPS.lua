@@ -95,8 +95,8 @@ end
 
 function getCharges(name, modDB)
     local value = modDB:Sum("BASE", nil, name.."ChargesMax")
-    if modDB:Sum("FLAG", nil, "Use"..name.."Charges") then
-		value = modDB:Sum("OVERRIDE", nil, name.."Charges") or value
+    if modDB:Flag(nil, "Use"..name.."Charges") then
+		value = modDB:Override(nil, name.."Charges") or value
 	else
 		value = 0
     end
