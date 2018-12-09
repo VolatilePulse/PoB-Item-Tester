@@ -54,7 +54,7 @@ function findModEffect(modLine, statField)
 
     -- Construct jewel with the mod just to use its mods in the passive node
     local itemText = "Test Jewel\nMurderous Eye Jewel\n"..modLine
-    local item = common.New("Item", build.targetVersion, itemText)
+    local item = new("Item", build.targetVersion, itemText)
     testNode.modList = item.modList
 
     -- Calculate stat differences

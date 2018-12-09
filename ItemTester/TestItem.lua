@@ -23,7 +23,7 @@ end
 
 -- Load an item from copy data
 local itemText = loadText(INPUT_FILE)
-local newItem = common.New("Item", build.targetVersion, itemText)
+local newItem = new("Item", build.targetVersion, itemText)
 
 if newItem.base then
 	newItem:NormaliseQuality() -- Set to top quality
