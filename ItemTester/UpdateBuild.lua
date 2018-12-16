@@ -50,8 +50,8 @@ if not isValidString(build.importTab.controls.accountName.buf) then
 end
 
 -- Check we have a character name
-if not isValidString(build.importTab.lastCharacterHash:match("%S")) then
-    print("Character not configured")
+if not build.importTab.lastCharacterHash or not isValidString(build.importTab.lastCharacterHash:match("%S")) then
+    print("Import not configured for this character")
     os.exit(1)
 end
 
