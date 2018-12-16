@@ -16,6 +16,7 @@
   {"name": "% generic", "desc": "12% increased Damage", "count": 12},
   {"name": "crit chance", "desc": "16% increased Global Critical Strike Chance", "count": 16},
   {"name": "crit multi", "desc": "+16% to Global Critical Strike Multiplier", "count": 16},
+  {"name": "base crit", "desc": "+1% Critical Strike Chance", "count": 1},
   {"name": "attack speed", "desc": "10% increased Attack Speed", "count": 10},
   {"name": "cast speed", "desc": "10% increased Cast Speed", "count": 10},
   {"name": "pen all", "desc": "Damage Penetrates 8% Elemental Resistances", "count": 8},
