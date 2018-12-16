@@ -237,6 +237,7 @@ values["EnduranceCount"] = getCharges("Endurance", actor.modDB)
 
 -- Infer some extra flags from what we already have
 if flags.Fire or flags.Cold or flags.Lightning then flags.Elemental = true end
+if baseStats.ChaosTakenHitMult == 0 then flags.conditionFullLife = true end -- CI
 
 -- Add values to URL
 if debug then print('\nPost values:') end
