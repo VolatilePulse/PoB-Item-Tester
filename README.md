@@ -10,7 +10,7 @@ Simply run `TestItem.ahk` to get started.
 
 #### Requirements
 * [Autohotkey v1](https://www.autohotkey.com/) is required. Do not install v2.
-* [Path of Building](https://github.com/Openarl/PathOfBuilding) is required, and it must have been installed from its **zip file** release (the installer .exe leaves out a file that is required for this process).
+* [Path of Building](https://github.com/Openarl/PathOfBuilding) is required (now supports both the portable and installer versions).
 
 ## Item Testing
 With the AHK script running...

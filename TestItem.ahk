@@ -10,11 +10,11 @@
 
 global _LuaDir := "\ItemTester"
 
-global _IniFile := A_ScriptDir . "\TestItem.ini"
-global _LuaJIT := A_ScriptDir . "\bin\luajit.exe"
+global _IniFile := A_ScriptDir "\TestItem.ini"
+global _LuaJIT := A_ScriptDir "\bin\luajit.exe"
 
 global _GUIOK := false
-global _PoBPath := "", _BuildDir = "", _CharacterFileName =""
+global _PoBPath := "", _BuildDir = "", _CharacterFileName = "", _PoBInstall = ""
 
 ; Info Tooltip variables
 global _Info, _InfoHwnd, _InfoText
@@ -26,7 +26,7 @@ global _Item, _ItemHwnd, _ItemText
 DetectHiddenWindows, On
 
 CreateGUI()
-SetVariablesAndFiles(_LuaDir, _PoBPath, _BuildDir, _CharacterFileName)
+SetVariablesAndFiles(_LuaDir, _PobInstall, _PoBPath, _BuildDir, _CharacterFileName)
 
 DisplayInformation("Complete!")
 Sleep, 1000
@@ -142,19 +142,23 @@ CreateGUI() {
     Gui, _Item:Show, NoActivate Hide
 }
 
-SetVariablesAndFiles(byRef luaDir, byRef pobPath, byRef buildDir, byRef fileName) {
+SetVariablesAndFiles(byRef luaDir, byRef pobInstall, byRef pobPath, byRef buildDir, byRef fileName) {
+    IniRead, pobInstall, %_IniFile%, General, PathToPoBInstall, %A_Space%
     IniRead, pobPath, %_IniFile%, General, PathToPoB, %A_Space%
     IniRead, buildDir, %_IniFile%, General, BuildDirectory, %A_Space%
     IniRead, fileName, %_IniFile%, General, CharacterBuildFileName, %A_Space%
 
     ; Make sure PoB hasn't moved
-    GetPoBPath(pobPath)
-    SaveBuildDirectory(buildDir, GetBuildDir(pobPath, buildDir, false))
+    GetPoBPath(pobInstall, pobPath)
+    SaveBuildDirectory(buildDir, GetBuildDir(pobInstall, buildDir, false))
 
     SetWorkingDir, %pobPath%
 
     luaDir := A_ScriptDir . luaDir
-    EnvSet, LUA_PATH, %pobPath%\lua\?.lua;%luaDir%\?.lua
+    EnvGet, curPATH, PATH
+    EnvSet, PATH, %pobInstall%;%curPATH%
+    EnvSet, LUA_PATH, %luaDir%\?.lua;%pobPath%\lua\?.lua;%pobInstall%\lua\?.lua
+    EnvSet, LUA_CPATH, %pobInstall%\?.dll
 
     ; Make sure the Character file still exists
     if (fileName <> "CURRENT" and !(fileName and FileExist(buildDir "\" fileName))) {
@@ -165,8 +169,10 @@ SetVariablesAndFiles(byRef luaDir, byRef pobPath, byRef buildDir, byRef fileName
     }
 }
 
-GetPoBPath(byRef pobPath) {
-    if (!pobPath or !FileExist(pobPath . "\Path of Building.exe")) {
+GetPoBPath(byRef pobInstall, byRef pobPath) {
+    exeFound := (FileExist(pobInstall "\Path of Building.exe"))
+    launchFound := ((FileExist(pobInstall "\Launch.lua")) || (FileExist(pobPath "\Launch.lua")))
+    if ((!pobInstall) || (!pobPath) || (!exeFound) || (!launchFound)) {
         if (!WinExist("Path of Building ahk_class SimpleGraphic Class"))
             DisplayInformation("Please launch Path of Building")
 
@@ -178,16 +184,28 @@ GetPoBPath(byRef pobPath) {
             ExitApp, 1
         }
         ; Get the PoB Directory from the PoB Path
-        SplitPath, FullPath, , pobPath
+        SplitPath, FullPath, , pobInstall
+        IniWrite, %pobInstall%, %_IniFile%, General, PathToPoBInstall
+        if (FileExist(pobInstall "\Launch.lua"))
+            pobPath := pobInstall
+        else if (FileExist(A_AppDataCommon "\Path of Building\Launch.lua"))
+            pobPath := A_AppDataCommon "\Path of Building"
+        else
+            MsgBox % A_AppDataCommon "\Path of Building\Launch.lua"
         IniWrite, %pobPath%, %_IniFile%, General, PathToPoB
+
         DisplayInformation()
     }
 }
 
-GetBuildDir(pobPath, byRef buildDir, force = true) {
+GetBuildDir(pobInstall, byRef buildDir, force = true) {
     if (!buildDir or !FileExist(buildDir))
-        if (FileExist(pobPath "\Builds"))
-            buildDir := pobPath "\Builds"
+    {
+        if (FileExist(pobInstall "\Builds"))
+            buildDir := pobInstall "\Builds"
+        else if (FileExist(A_MyDocuments "\Path of Building\Builds"))
+            buildDir := A_MyDocuments "\Path of Building\Builds"
+    }
 
     newDir := ""
     tempDir := buildDir
@@ -325,7 +343,7 @@ CreateTV(folder, filePattern = "*.xml") {
         loop, Parse, tempDir, "\"
         {
             if (runningDir)
-                newPath := runningDir . "\" . A_LoopField
+                newPath := runningDir "\" A_LoopField
             else
                 newPath := A_LoopField
 
@@ -412,12 +430,12 @@ DisplayCharacterPicker(allowTemp = true) {
 }
 
 DisplayOutput() {
-    if (!FileExist(A_Temp . "\PoBTestItem.txt.html")) {
+    if (!FileExist(A_Temp "\PoBTestItem.txt.html")) {
         MsgBox, Item type is not supported.
         return
     }
 
-    _ItemText.Navigate("file://" . A_Temp . "\PoBTestItem.txt.html")
+    _ItemText.Navigate("file://" A_Temp "\PoBTestItem.txt.html")
     while _ItemText.busy or _ItemText.ReadyState != 4
         Sleep 10
 
