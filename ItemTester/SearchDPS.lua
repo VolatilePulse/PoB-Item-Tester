@@ -242,7 +242,7 @@ if baseStats.ChaosTakenHitMult == 0 then flags.conditionFullLife = true end -- C
 -- Add values to URL
 if debug then print('\nPost values:') end
 for name,value in pairs(values) do
-    if value then url = url..urlencode(name).."="..encodeValue(value).."&" end
+    if value then url = url..urlencode(name:gsub(' ','')).."="..encodeValue(value).."&" end
     if debug then print('  '..name..string.format(" = %s", value)) end
 end
 
