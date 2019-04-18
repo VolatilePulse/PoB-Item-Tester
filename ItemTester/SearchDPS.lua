@@ -256,7 +256,8 @@ end
 url = url..flagsString.."&"
 
 -- Add skill name and character name
-url = url.."Skill="..urlencode(skillName).."&".."Character="..urlencode(build.buildName)
+name = build.buildName:gsub('.*[/\\]', ''):gsub('.xml','')
+url = url.."Skill="..urlencode(skillName).."&".."Character="..urlencode(name)
 
 if debug then
     print()
