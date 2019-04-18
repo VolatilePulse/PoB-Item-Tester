@@ -41,14 +41,24 @@ function findRelevantStat(activeEffect, chosenField)
         end
     end
 
-    if (stats['CombinedDPS']) and not useAverage then return 'CombinedDPS' end
-    if (stats['AverageHit']) then return 'AverageHit' end
+    actorType = nil
+    if stats['Minion'] then
+        actorType = 'Minion'
+    end
+
+    if actorType then
+        stats = stats[actorType]
+    end
+
+    if useAverage and not stats['AverageHit'] then useAverage = false end
+    if stats['CombinedDPS'] and not useAverage then return actorType,'CombinedDPS' end
+    if stats['AverageHit'] then return actorType,'AverageHit' end
 
     print("Error: Don't know how to deal with this build's damage output type")
     os.exit(1)
 end
 
-function findModEffect(modLine, statField)
+function findModEffect(modLine, statField, actorType)
     -- Construct an empty passive socket node to test in
     local testNode = {id="temporary-test-node", type="Socket", alloc=false, sd={"Temp Test Socket"}, modList={}}
 
@@ -60,6 +70,12 @@ function findModEffect(modLine, statField)
     -- Calculate stat differences
     local calcFunc, baseStats = build.calcsTab:GetMiscCalculator()
     local newStats = calcFunc({ addNodes={ [testNode]=true } })
+
+    -- Switch to minion/totem stats if needed
+    if actorType then
+        newStats = newStats[actorType]
+        baseStats = baseStats[actorType]
+    end
 
     -- Pull out the difference in DPS
     local statVal1 = newStats[statField] or 0
@@ -150,8 +166,9 @@ print("Character: "..build.buildName)
 print("Current skill: "..skillName)
 
 -- Work out which field to use to report damage: CombinedDPS / AverageHit
-local statField = findRelevantStat(activeEffect, arg[2])
+local actorType,statField = findRelevantStat(activeEffect, arg[2])
 print("Using stat: " .. statField)
+print("Using actor: " .. (actorType or 'Player'))
 print()
 
 -- Setup the main actor for gathering data
@@ -159,11 +176,15 @@ local calcFunc, baseStats = build.calcsTab:GetMiscCalculator()
 local env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
 local actor = env.player
 
+if actorType then
+    baseStats = baseStats[actorType]
+end
+
 -- Get DPS difference for each mod
 -- url = 'http://gw2crafts.net/pobsearch/modsearch.html?'
 url = 'https://xanthics.github.io/PoE_Weighted_Search/?'
 for _,mod in ipairs(modData) do
-    local dps = findModEffect(mod.desc, statField)
+    local dps = findModEffect(mod.desc, statField, actorType)
     url = url .. string.format("%s=%.1f&", urlencode(mod.name), dps)
 end
 
@@ -238,6 +259,7 @@ values["EnduranceCount"] = getCharges("Endurance", actor.modDB)
 -- Infer some extra flags from what we already have
 if flags.Fire or flags.Cold or flags.Lightning then flags.Elemental = true end
 if baseStats.ChaosTakenHitMult == 0 then flags.conditionFullLife = true end -- CI
+if actorType == 'Minion' then flags.conditionUsedMinionSkillRecently = true end
 
 -- Add values to URL
 if debug then print('\nPost values:') end
