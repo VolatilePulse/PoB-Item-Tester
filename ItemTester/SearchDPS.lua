@@ -238,7 +238,7 @@ if actor.mainSkill.skillFlags.hit then flags['conditionHitRecently'] = true end
 
 -- Insert flags for weapon types
 flags["Shield"] = (actor.itemList["Weapon 2"] and actor.itemList["Weapon 2"].type == "Shield") or (actor == actor and env.aegisModList)
-flags["DuelWielding"] = actor.weaponData1.type and actor.weaponData2.type and actor.weaponData1.type ~= "None"
+flags["DualWielding"] = actor.weaponData1.type and actor.weaponData2.type and actor.weaponData1.type ~= "None"
 if actor.itemList["Weapon 1"] then extractWeaponFlags(env, actor.weaponData1, flags) end
 if actor.itemList["Weapon 2"] then extractWeaponFlags(env, actor.weaponData2, flags) end
 if flags["Spell"] then flags["Melee"] = nil end
