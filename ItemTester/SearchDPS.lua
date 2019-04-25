@@ -23,24 +23,6 @@ debug = false
 function findRelevantStat(activeEffect, chosenField)
     local calcFunc, stats = build.calcsTab:GetMiscCalculator()
 
-    if chosenField and stats[chosenField] ~= nil then
-        return chosenField
-    elseif chosenField and chosenField == "OPTIONS" then
-        print("\nAvailable stats:")
-        print(inspect(stats))
-        os.exit(1)
-    elseif chosenField and stats[chosenField] == nil then
-        print("Error: Stat '"..chosenField.."' is not found (case sensitive)")
-        os.exit(1)
-    end
-
-    local useAverage = false
-    for _,mod in ipairs(activeEffect.grantedEffect.baseMods) do
-        if mod.value and type(mod.value) == "table" and mod.value.key == "showAverage" and mod.value.value == true then
-            useAverage = true
-        end
-    end
-
     actorType = nil
     if stats['Minion'] then
         actorType = 'Minion'
@@ -50,10 +32,19 @@ function findRelevantStat(activeEffect, chosenField)
         stats = stats[actorType]
     end
 
-    if useAverage and not stats['AverageHit'] then useAverage = false end
-    if stats['CombinedDPS'] and not useAverage then return actorType,'CombinedDPS' end
-    if stats['AverageHit'] then return actorType,'AverageHit' end
+    if chosenField and chosenField == "OPTIONS" then -- show stat list
+        print("\nAvailable stats:")
+        print(inspect(stats))
+        os.exit(1)
+    elseif chosenField and stats[chosenField] ~= nil then -- user-specified stat
+        return actorType,chosenField
+    elseif chosenField then -- bad user-specified stat
+        print("Error: Stat '"..chosenField.."' is not found (case sensitive)")
+        os.exit(1)
+    end
 
+    if stats['CombinedDPS'] then return actorType,'CombinedDPS' end
+    if stats['AverageHit'] then return actorType,'AverageHit' end
     print("Error: Don't know how to deal with this build's damage output type")
     os.exit(1)
 end
@@ -167,6 +158,7 @@ print("Current skill: "..skillName)
 
 -- Work out which field to use to report damage: CombinedDPS / AverageHit
 local actorType,statField = findRelevantStat(activeEffect, arg[2])
+print()
 print("Using stat: " .. statField)
 print("Using actor: " .. (actorType or 'Player'))
 print()
