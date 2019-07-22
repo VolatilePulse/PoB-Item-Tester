@@ -306,14 +306,19 @@ SortArray(array, order := "A") {
 ;--------------------------------------------------
 DisplayInformation(string := "") {
     ; Hide the Information Window
-    if (!string) {
+    if (string = "") {
         Gui, _Info:Hide
         return
     }
 
     GuiControl, _Info:Text, _InfoText, %string%
-
     WinGetPos, winX, winY, winW, winH, A
+
+    ; If no active window was found
+    if (winX = "") {
+        return
+    }
+
     WinGetPos, , , guiW, guiH, ahk_id %_InfoHwnd%
     posX := winX + (winW - guiW) / 2
     posY := winY + 50
