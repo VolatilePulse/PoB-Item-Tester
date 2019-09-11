@@ -63,5 +63,12 @@
   {"name": "minionflatlightning", "desc": "Minions deal 6 to 68 additional Lightning Damage", "count": 37},
   {"name": "minionflatcold", "desc": "Minions deal 14 to 31 additional Cold Damage", "count": 22.5},
   {"name": "minionflatfire", "desc": "Minions deal 21 to 34 additional Fire Damage", "count": 27.5},
-  {"name": "minionflatchaos", "desc": "Minions deal 4 to 7 additional Chaos Damage", "count": 5.5}
+  {"name": "minionflatchaos", "desc": "Minions deal 4 to 7 additional Chaos Damage", "count": 5.5},
+  {"name": "achaosssg", "desc": "+1 to Level of all Chaos Spell Skill Gems", "count": 1},
+  {"name": "acoldssg", "desc": "+1 to Level of all Cold Spell Skill Gems", "count": 1},
+  {"name": "afiressg", "desc": "+1 to Level of all Fire Spell Skill Gems", "count": 1},
+  {"name": "alightningssg", "desc": "+1 to Level of all Lightning Spell Skill Gems", "count": 1},
+  {"name": "aminionsg", "desc": "+1 to Level of all Minion Skill Gems", "count": 1},
+  {"name": "aphysicalssg", "desc": "+1 to Level of all Physical Spell Skill Gems", "count": 1},
+  {"name": "aspellsg", "desc": "+1 to Level of all Spell Skill Gems", "count": 1}
 ]
