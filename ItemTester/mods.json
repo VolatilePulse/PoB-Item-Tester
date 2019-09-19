@@ -5,7 +5,7 @@
   {"name": "ppoison", "desc": "12% increased Damage with Poison", "count": 12},
   {"name": "pignite", "desc": "12% increased Burning Damage", "count": 12},
   {"name": "pcolddotmulti", "desc": "+12% to Cold Damage over Time Multiplier", "count": 12},
-  {"name": "pchaosdotmulti", "desc": "+12% to Non-Ailment Chaos Damage over Time Multiplier", "count": 12},
+  {"name": "pchaosdotmulti", "desc": "+12% to Chaos Damage over Time Multiplier", "count": 12},
   {"name": "flataccuracy", "desc": "+100 to Accuracy Rating", "count": 100},
   {"name": "paccuracy", "desc": "10% increased Global Accuracy Rating", "count": 10},
   {"name": "pphysical", "desc": "12% increased Physical Damage", "count": 12},
