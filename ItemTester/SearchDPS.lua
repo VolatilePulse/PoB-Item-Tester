@@ -177,7 +177,7 @@ end
 url = 'https://xanthics.github.io/PoE_Weighted_Search/?'
 for _,mod in ipairs(modData) do
     local dps = findModEffect(mod.desc, statField, actorType)
-    url = url .. string.format("%s=%.1f&", urlencode(mod.name), dps)
+    if dps >= 0.05 or dps <= -0.05 then url = url .. string.format("%s=%.1f&", urlencode(mod.name), dps) end
 end
 
 if debug then
