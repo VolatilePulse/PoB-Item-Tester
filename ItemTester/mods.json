@@ -4,7 +4,6 @@
   {"name": "pbleed", "desc": "12% increased Damage with Bleeding", "count": 12},
   {"name": "ppoison", "desc": "12% increased Damage with Poison", "count": 12},
   {"name": "pignite", "desc": "12% increased Burning Damage", "count": 12},
-  {"name": "ppoisonfaster", "desc": "Poisons you inflict deal Damage 10% faster", "count": 10},
   {"name": "pdotmulti", "desc": "+12% to Damage over Time Multiplier", "count": 12},
   {"name": "pcolddotmulti", "desc": "+12% to Cold Damage over Time Multiplier", "count": 12},
   {"name": "pchaosdotmulti", "desc": "+12% to Chaos Damage over Time Multiplier", "count": 12},
