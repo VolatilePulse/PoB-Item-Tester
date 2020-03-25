@@ -60,6 +60,8 @@
   {"name": "flatlife", "desc": "+40 to maximum Life", "count": 40},
   {"name": "pes", "desc": "7% increased maximum Energy Shield", "count": 7},
   {"name": "flates", "desc": "+40 to maximum Energy Shield", "count": 40},
+  {"name": "pmana", "desc": "7% increased maximum Mana", "count": 7},
+  {"name": "flatmana", "desc": "+40 to maximum Mana", "count": 40},
   {"name": "pminion", "desc": "Minions deal 12% increased Damage", "count": 12},
   {"name": "minionattackspeed", "desc": "Minions have 10% increased Attack Speed", "count": 10},
   {"name": "minioncastspeed", "desc": "Minions have 10% increased Cast Speed", "count": 10},
