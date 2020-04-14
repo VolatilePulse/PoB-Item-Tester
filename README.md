@@ -1,4 +1,4 @@
-# Path of Building Item Tester
+# Path of Building Item Tester ![Discord Banner 3](https://discordapp.com/api/guilds/520831275393613824/widget.png?style=shield)
 AHK and Lua scripts to automate comparing PoE items from in game or trade sites against your current build with the power of PoB - without needing to run it.
 
 #### Features:
