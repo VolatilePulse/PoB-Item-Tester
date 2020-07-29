@@ -9,7 +9,7 @@ AHK and Lua scripts to automate comparing PoE items from in game or trade sites 
 Simply run `TestItem.ahk` to get started.
 
 #### Requirements
-* [Autohotkey v1](https://www.autohotkey.com/) is required. Do not install v2.
+* [Autohotkey v1.1](https://www.autohotkey.com/) is required. Do not install v1.0 or v2.
 * Path of Building is required (supports both the portable and installer versions).
   * [Path of Building](https://github.com/Openarl/PathOfBuilding) or [Path of Building (Community Fork)](https://github.com/PathOfBuildingCommunity) 
 
