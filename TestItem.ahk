@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 #persistent
 #SingleInstance, force
 
@@ -27,6 +27,7 @@ DetectHiddenWindows, On
 
 CreateGUI()
 SetVariablesAndFiles(_LuaDir, _PobInstall, _PoBPath, _BuildDir, _CharacterFileName)
+InsertTrayMenuItems()
 
 DisplayInformation("Complete!")
 Sleep, 1000
@@ -74,18 +75,21 @@ Ok:
     return
 
 ; Re-import build (update)
+TMenu_UpdateCharacterBuild:
 +^u::
     UpdateCharacterBuild((_CharacterFileName == "CURRENT") ? "CURRENT" : _BuildDir "\" _CharacterFileName)
     return
 
 ; Test item from clipboard
+TMenu_TestItemFromClipboard:
 ^#c::
     Item := GetItemFromClipboard()
     if (Item)
         TestItemFromClipboard(Item, (_CharacterFileName == "CURRENT") ? "CURRENT" : _BuildDir "\" _CharacterFileName)
     return
 
-; Test item fom clipboard with character picker
+; Test item from clipboard with character picker
+TMenuWithPicker_TestItemFromClipboard:
 ^#!c::
     Item := GetItemFromClipboard()
     if (Item) {
@@ -96,15 +100,24 @@ Ok:
     return
 
 ; Generate DPS search
+TMenu_GenerateDPSSearch:
 ^#d::
     GenerateDPSSearch((_CharacterFileName == "CURRENT") ? "CURRENT" : _BuildDir "\" _CharacterFileName)
     return
 
 ; Generate DPS search with character picker
+TMenuWithPicker_GenerateDPSSearch:
 ^#!d::
     filename := DisplayCharacterPicker()
     if (filename)
         GenerateDPSSearch(filename)
+    return
+
+TMenu_ShowCharacterPicker:
+    if (!DisplayCharacterPicker(false)) {
+        MsgBox, You didn't make a selection. The script will now exit.
+        ExitApp, 1
+    }
     return
 
 ;--------------------------------------------------
@@ -223,6 +236,18 @@ GetBuildDir(pobInstall, byRef buildDir, force = true) {
 
     GuiControl, _CP:Text, _CPDir, %newDir%
     return newDir
+}
+
+InsertTrayMenuItems() {
+    Menu, Tray, NoStandard
+    Menu, Tray, Add, Show Character Picker, TMenu_ShowCharacterPicker
+    Menu, Tray, Add, Re-import build (update), TMenu_UpdateCharacterBuild
+    Menu, Tray, Add, Test item from clipboard, TMenu_TestItemFromClipboard
+    Menu, Tray, Add, Test item from clipboard with character picker, TMenuWithPicker_TestItemFromClipboard
+    Menu, Tray, Add, Generate DPS search, TMenu_GenerateDPSSearch
+    Menu, Tray, Add, Generate DPS search with character picker, TMenuWithPicker_GenerateDPSSearch
+    Menu, Tray, Add ; Separator
+    Menu, Tray, Standard
 }
 
 GetItemFromClipboard() {
