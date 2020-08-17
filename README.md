@@ -11,7 +11,7 @@ Simply run `TestItem.ahk` to get started.
 #### Requirements
 * [Autohotkey v1.1](https://www.autohotkey.com/) is required. Do not install v1.0 or v2.
 * Path of Building is required (supports both the portable and installer versions).
-  * [Path of Building](https://github.com/Openarl/PathOfBuilding) or [Path of Building (Community Fork)](https://github.com/PathOfBuildingCommunity) 
+  * [Path of Building](https://github.com/Openarl/PathOfBuilding) or [Path of Building (Community Fork)](https://github.com/PathOfBuildingCommunity)
 
 ## Item Testing
 With the AHK script running...
@@ -46,4 +46,8 @@ A generated DPS search:
 ![Screenshot of the DPS search result](https://raw.githubusercontent.com/VolatilePulse/PoB-Item-Tester/master/imgs/sshot-dps.png)
 
 ## Thanks
-This tool could not exist without the amazing Path of Building, without PoE_Weighted_Search... and of course without Grinding Gear Games.
+This tool could not exist without:
+* The amazing Path of Building and the fresh life [@LocalIdentity](https://github.com/LocalIdentity) has given it
+* PoE_Weighted_Search and the continued support of [@xanthics](https://github.com/xanthics)
+* [@Nightblade](https://github.com/Nightblade) for AHK improvements
+* ... and of course Grinding Gear Games!
