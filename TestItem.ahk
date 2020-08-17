@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 #persistent
 #SingleInstance, force
 
@@ -243,9 +243,9 @@ InsertTrayMenuItems() {
     Menu, Tray, Add, Show Character Picker, TMenu_ShowCharacterPicker
     Menu, Tray, Add, Re-import build (update), TMenu_UpdateCharacterBuild
     Menu, Tray, Add, Test item from clipboard, TMenu_TestItemFromClipboard
-    Menu, Tray, Add, Test item from clipboard with character picker, TMenuWithPicker_TestItemFromClipboard
+    Menu, Tray, Add, Test item from clipboard (choose char), TMenuWithPicker_TestItemFromClipboard
     Menu, Tray, Add, Generate DPS search, TMenu_GenerateDPSSearch
-    Menu, Tray, Add, Generate DPS search with character picker, TMenuWithPicker_GenerateDPSSearch
+    Menu, Tray, Add, Generate DPS search (choose char), TMenuWithPicker_GenerateDPSSearch
     Menu, Tray, Add ; Separator
     Menu, Tray, Standard
 }
