@@ -6,6 +6,7 @@
   {"name": "pignite", "desc": "12% increased Burning Damage", "count": 12},
   {"name": "pdotmulti", "desc": "+12% to Damage over Time Multiplier", "count": 12},
   {"name": "physdotmulti", "desc": "+12% to Physical Damage over Time Multiplier", "count": 12},
+  {"name": "pfiredotmulti", "desc": "+12% to Fire Damage over Time Multiplier", "count": 12},
   {"name": "pcolddotmulti", "desc": "+12% to Cold Damage over Time Multiplier", "count": 12},
   {"name": "pchaosdotmulti", "desc": "+12% to Chaos Damage over Time Multiplier", "count": 12},
   {"name": "flataccuracy", "desc": "+100 to Accuracy Rating", "count": 100},
