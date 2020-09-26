@@ -28,13 +28,13 @@ With the AHK script running...
 * Press Ctrl-Windows-U and wait a moment.
 * Altneratively, invoking the build picker during item testing (with Ctrl-Windows-Alt-C) will allow you to select "Update build before continuing".
 * The script will re-import your build from pathofexile.com, using the existing import settings in Path of Building.
-* **Beware! This will overwrite local changes to your build**
+* **Beware! This will overwrite local changes to your build.**
 
 ## DPS Search
 With the AHK script running...
 * Press Ctrl-Windows-D.
 * Alternatively, press Ctrl-Windows-Alt-D to launch the build picker before performing the test.
-* A browser will open `http://gw2crafts.net/pobsearch/modsearch.html`, including the results of various mod tests. The name of your build and current skill are also included only so you can verify the test was performed on the right skill.
+* A browser will open `https://xanthics.github.io/PoE_Weighted_Search/`, including the results of various mod tests. The name of your build and current skill are also included only so you can verify the test was performed on the right skill.
 * Check the flags located further down the page and alter if desired. The script makes a guess from your skills and config but it's unlikely to get it 100% right.
 * Press the Generate button and a link to the official trade site will appear.
 * Sometimes this link will have to be opened twice due to an issue on the official trade site.
