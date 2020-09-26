@@ -17,6 +17,7 @@ dofile(SCRIPT_PATH.."mockui.lua")
 xml = require("xml")
 json = require("json")
 inspect = require("inspect")
+testercore = require("testercore")
 
 debug = false
 
@@ -39,13 +40,13 @@ function findRelevantStat(activeEffect, chosenField)
     elseif chosenField and stats[chosenField] ~= nil then -- user-specified stat
         return actorType,chosenField
     elseif chosenField then -- bad user-specified stat
-        print("Error: Stat '"..chosenField.."' is not found (case sensitive)")
+        print("ERROR: Stat '"..chosenField.."' is not found (case sensitive)")
         os.exit(1)
     end
 
     if stats['CombinedDPS'] then return actorType,'CombinedDPS' end
     if stats['AverageHit'] then return actorType,'AverageHit' end
-    print("Error: Don't know how to deal with this build's damage output type")
+    print("ERROR: Don't know how to deal with this build's damage output type")
     os.exit(1)
 end
 
@@ -122,27 +123,18 @@ local modDataText = loadText(SCRIPT_PATH.."mods.json")
 if modDataText then
     modData = json.decode(modDataText)
 else
-    print("Error: Failed to load mods.json")
+    print("ERROR: Failed to load mods.json")
     os.exit(1)
 end
 
 -- Load a specific build file or use the default
-if BUILD_XML ~= "CURRENT" then
-    local buildXml = loadText(BUILD_XML)
-    loadBuildFromXML(buildXml)
-    build.buildName = BUILD_XML
-end
+testercore.loadBuild(BUILD_XML)
 
 -- Gather chosen skill and part
-local pickedGroupIndex = build.mainSocketGroup
-local socketGroup = build.skillsTab.socketGroupList[pickedGroupIndex]
-local pickedGroupName = socketGroup.displayLabel
-local pickedActiveSkillIndex = socketGroup.mainActiveSkill
-local displaySkill = socketGroup.displaySkillList[pickedActiveSkillIndex]
-local activeEffect = displaySkill.activeEffect
-local pickedActiveSkillName = activeEffect.grantedEffect.name
-local pickedPartIndex = activeEffect.grantedEffect.parts and activeEffect.srcInstance.skillPart
-local pickedPartName = activeEffect.grantedEffect.parts and activeEffect.grantedEffect.parts[pickedPartIndex].name
+local parts = testercore.readBuildInfo()
+local pickedGroupName = parts.pickedGroupName
+local pickedActiveSkillName = parts.pickedActiveSkillName
+local pickedPartName = parts.pickedPartName
 
 -- Work out a reasonable skill name
 local skillName = pickedGroupName;
@@ -153,8 +145,7 @@ if (pickedPartName) then
     skillName = skillName.." / "..pickedPartName
 end
 
-print("Character: "..build.buildName)
-print("Current skill: "..skillName)
+print("Using skill name: "..skillName)
 
 -- Work out which field to use to report damage: CombinedDPS / AverageHit
 local actorType,statField = findRelevantStat(activeEffect, arg[2])
@@ -177,6 +168,7 @@ end
 url = 'https://xanthics.github.io/PoE_Weighted_Search/?'
 for _,mod in ipairs(modData) do
     local dps = findModEffect(mod.desc, statField, actorType)
+    if debug then print('  ' .. mod.desc .. ' = ' .. dps) end
     if dps >= 0.05 or dps <= -0.05 then url = url .. string.format("%s=%.1f&", urlencode(mod.name), dps) end
 end
 

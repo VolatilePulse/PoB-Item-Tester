@@ -16,10 +16,9 @@ hr { margin: 4px -4px 4px -4px; border: none; border-top: #ffff77 solid 2px }
 ]]
 
 -- Load a specific build file or use the default
-if BUILD_XML ~= "CURRENT" then
-    local buildXml = loadText(BUILD_XML)
-    loadBuildFromXML(buildXml)
-end
+testercore = require("testercore")
+testercore.loadBuild(BUILD_XML)
+testercore.readBuildInfo()
 
 -- Load an item from copy data
 local itemText = loadText(INPUT_FILE)

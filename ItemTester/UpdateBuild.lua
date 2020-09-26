@@ -7,7 +7,7 @@ HELP = [[
 
 local BUILD_XML = arg[1];
 if BUILD_XML == nil then
-    print("Usage: UpdateBuild.lua <build xml>")
+    print("Usage: UpdateBuild.lua <build xml>|CURRENT")
     os.exit(1)
 end
 
@@ -16,42 +16,27 @@ dofile(SCRIPT_PATH.."mockui.lua")
 
 xml = require("xml")
 inspect = require("inspect")
-
+testercore = require("testercore")
 
 -- Load a specific build file or use the default
-if BUILD_XML ~= "CURRENT" then
-    local buildXml = loadText(BUILD_XML)
-    loadBuildFromXML(buildXml)
-end
-
--- Remember chosen skill and part
-local pickedGroupIndex = build.mainSocketGroup
-local socketGroup = build.skillsTab.socketGroupList[pickedGroupIndex]
-local pickedGroupName = socketGroup.displayLabel
-local pickedActiveSkillIndex = socketGroup.mainActiveSkill
-local displaySkill = socketGroup.displaySkillList[pickedActiveSkillIndex]
-local activeEffect = displaySkill.activeEffect
-local pickedActiveSkillName = activeEffect.grantedEffect.name
-local pickedPartIndex = activeEffect.grantedEffect.parts and activeEffect.srcInstance.skillPart
-local pickedPartName = activeEffect.grantedEffect.parts and activeEffect.grantedEffect.parts[pickedPartIndex].name
-
-print("Character: "..build.buildName)
-print("Current skill group/gem/part: "..pickedGroupName.." / "..pickedActiveSkillName.." / "..(pickedPartName or '-'))
-
-
+testercore.loadBuild(BUILD_XML)
+local parts = testercore.readBuildInfo()
+local pickedGroupName = parts.pickedGroupName
+local pickedActiveSkillName = parts.pickedActiveSkillName
+local pickedPartName = parts.pickedPartName
 
 -- Being the long update process...
 print("Importing character changes...")
 
 -- Check we have an account name
 if not isValidString(build.importTab.controls.accountName.buf) then
-    print("Account name not configured")
+    print("ERROR: Account name not configured. Aborting.")
     os.exit(1)
 end
 
 -- Check we have a character name
 if not build.importTab.lastCharacterHash or not isValidString(build.importTab.lastCharacterHash:match("%S")) then
-    print("Import not configured for this character")
+    print("ERROR: Importable character name not configured for this build. Aborting.")
     os.exit(1)
 end
 
@@ -97,7 +82,7 @@ if newGroupName ~= pickedGroupName then
         end
     end
     if newGroupName ~= pickedGroupName then
-        print("Previous socket group not found")
+        print("ERROR: Previously selected socket group was not found. Aborting.")
         os.exit(11)
     end
 end
@@ -121,7 +106,7 @@ if newActiveSkillName ~= pickedActiveSkillName then
         end
     end
     if newGroupName ~= pickedGroupName then
-        print("Previous active skill not found")
+        print("ERROR: Previously selected active skill not found. Aborting.")
         os.exit(11)
     end
 end
@@ -141,8 +126,8 @@ if pickedPartIndex and newPartName ~= pickedPartName then
             break
         end
     end
-    if newPartName ~= pickedPartName then
-        print("Previous active sub-skill not found")
+    if pickedPartName and newPartName ~= pickedPartName then
+        print("ERROR: Previous active sub-skill not found. Aborting.")
         os.exit(11)
     end
 end
@@ -150,11 +135,6 @@ end
 -- print("Chosen group/skill/sub-skill: "..newGroupName..":"..newActiveSkillName..":"..newPartName)
 
 -- Save
-if BUILD_XML == "CURRENT" then
-    build:SaveDBFile()
-else
-    local saveXml = saveBuildToXml()
-    saveText(BUILD_XML, saveXml)
-end
+testercore.saveBuild(BUILD_XML)
 
 print("Success")

@@ -251,7 +251,7 @@ end
 function saveBuildToXml()
     local xmlText = build:SaveDB("dummy")
     if not xmlText then
-        print("Failed to prepare save XML")
+        print("ERROR: Failed to prepare save XML")
         os.exit(1)
     end
     return xmlText
@@ -260,7 +260,7 @@ end
 function saveText(filename, text)
     local file = io.open(filename, "w+")
     if not file then
-        print("Failed to write to output file")
+        print("ERROR: Failed to write to output file")
         os.exit(1)
     end
     file:write(text)
@@ -270,7 +270,7 @@ end
 function loadText(fileName)
     local fileHnd, errMsg = io.open(fileName, "r")
     if not fileHnd then
-        print("Failed to load file: "..fileName)
+        print("ERROR: Failed to load file: "..fileName)
         os.exit(1)
         -- return nil, errMsg
     end
@@ -282,7 +282,7 @@ end
 function loadTextLines(fileName)
     local fileHnd, errMsg = io.open(fileName, "r")
     if not fileHnd then
-        print("Failed to load file: "..fileName)
+        print("ERROR: Failed to load file: "..fileName)
         os.exit(1)
         -- return nil, errMsg
     end
@@ -320,4 +320,10 @@ end
 
 function lineToHtml(txt)
 	return txt:gsub("^%^7", ""):gsub("%^x(......)", "<span style=\"color:#%1\">"):gsub("%^7", "</span>"):gsub("%^8", "<span style=\"color:gray\">")
+end
+
+inspect = require('inspect')
+function _i(v, depth)
+    if depth == nil then depth = 1 end
+    print(inspect(v, {depth=depth}))
 end
