@@ -1,22 +1,20 @@
 @echo off
+SETLOCAL EnableDelayedExpansion
+
 set BASEDIR=%CD%
-REM Default path for the Installed version
-REM set POBPATH=C:\ProgramData\Path of Building
-set POBPATH=D:\Programs\PathOfBuilding
-set POBINSTALL=D:\Programs\PathOfBuilding
+for /F "tokens=1,2 delims==" %%A IN ('"type %BASEDIR%\TestItem.ini"') do set "%%A=%%B"
+if %CharacterBuildFileName%==CURRENT (
+    set BUILD=CURRENT
+) else (
+    set "BUILD=%BuildDirectory%\%CharacterBuildFileName%"
+)
+
+set PATH=%PathToPoBInstall%;%PATH%
+set LUA_PATH=%BASEDIR%\ItemTester\?.lua;%PathToPoB%\lua\?.lua;%PathToPoBInstall%\lua\?.lua
+set LUA_CPATH=%PathToPoBInstall%\?.dll
 set LUAJIT=%BASEDIR%\bin\luajit.exe
+cd /d %PathToPoB%
 
-echo Config...
-echo Base        : %BASEDIR%
-echo POB Install : %POBINSTALL%
-echo POB Data    : %POBPATH%
+"%LUAJIT%" %BASEDIR%\ItemTester\SearchDPS.lua %BUILD%
 
-set PATH=%POBINSTALL%;%PATH%
-set LUA_PATH=%BASEDIR%\ItemTester\?.lua;%POBPATH%\lua\?.lua;%POBINSTALL%\lua\?.lua
-set LUA_CPATH=%POBINSTALL%\?.dll
-
-echo:
-echo Running script...
-
-cd /d %POBPATH%
-"%LUAJIT%" %BASEDIR%\ItemTester\SearchDPS.lua CURRENT
+REM Add OPTIONS on the end to get skill damage stat options
