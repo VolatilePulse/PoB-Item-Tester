@@ -29,9 +29,7 @@ CreateGUI()
 SetVariablesAndFiles(_LuaDir, _PobInstall, _PoBPath, _BuildDir, _CharacterFileName)
 InsertTrayMenuItems()
 
-DisplayInformation("Complete!")
-Sleep, 1000
-DisplayInformation()
+Display("PoB Item Tester Loaded!")
 
 ; Register the function to call on script exit
 OnExit("ExitFunc")
@@ -137,7 +135,7 @@ CreateGUI() {
     Gui, _Info:Show, NoActivate Hide
 
     ; Character Picker
-    Gui, _CP:New, +Hwnd_CPHwnd -MaximizeBox -MinimizeBox, Pick You Character Build File
+    Gui, _CP:New, +Hwnd_CPHwnd -MaximizeBox -MinimizeBox, Pick Your Character Build File
     Gui, _CP:Margin, 8, 8
     Gui, _CP:Add, Checkbox, v_CPCurrent gCPCurrentCheck, Use PoB's last used build (since it last closed)
     Gui, _CP:Add, Button, gChangeDir, Change
@@ -183,8 +181,8 @@ SetVariablesAndFiles(byRef luaDir, byRef pobInstall, byRef pobPath, byRef buildD
 }
 
 GetPoBPath(byRef pobInstall, byRef pobPath) {
-    exeFound := (FileExist(pobInstall "\Path of Building.exe"))
-    launchFound := ((FileExist(pobInstall "\Launch.lua")) || (FileExist(pobPath "\Launch.lua")))
+    exeFound := FileExist(pobInstall "\Path of Building.exe")
+    launchFound := FileExist(pobPath "\Launch.lua")
     if ((!pobInstall) || (!pobPath) || (!exeFound) || (!launchFound)) {
         if (!WinExist("Path of Building ahk_class SimpleGraphic Class"))
             DisplayInformation("Please launch Path of Building")
@@ -193,18 +191,43 @@ GetPoBPath(byRef pobInstall, byRef pobPath) {
         WinGet, FullPath, ProcessPath, Path of Building ahk_class SimpleGraphic Class
 
         if !FullPath {
-            MsgBox Path of Building not detected.  Please relaunch this program and open Path of Building when requested
+            MsgBox Path of Building not detected.  Please relaunch this program and open Path of Building when requested.
             ExitApp, 1
         }
-        ; Get the PoB Directory from the PoB Path
-        SplitPath, FullPath, , pobInstall
-        IniWrite, %pobInstall%, %_IniFile%, General, PathToPoBInstall
-        if (FileExist(pobInstall "\Launch.lua"))
+
+        ; Get the commandline that ran PoB
+        cmdLine := ""
+        WinGet, pid, PID, Path of Building ahk_class SimpleGraphic Class
+        for proc in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process") {
+            if (proc.Name == "Path of Building.exe") {
+                if (cmdLine and cmdLine != proc.Commandline) {
+                    MsgBox, Multiple versions of Path of Building are running - please run only the most recent and try agian
+                    ExitApp, 1
+                }
+                cmdLine := proc.Commandline
+            }
+        }
+
+        ; Split it into exe and option lua parts (for installed versions)
+        args := DllCall("shlwapi\PathGetArgsW", Str,cmdLine, Str)
+        exe := SubStr(cmdLine, 1, StrLen(cmdLine) - StrLen(args) - 1)
+        DllCall("shlwapi\PathUnquoteSpacesW", Str, exe)
+        DllCall("shlwapi\PathUnquoteSpacesW", Str, args)
+
+        SplitPath, exe,, pobInstall
+        SplitPath, args,, pobPath
+
+        ; Fall back to pobInstall for Launch.lua if there's no pobPath
+        if (!pobPath and FileExist(pobInstall "\Launch.lua"))
             pobPath := pobInstall
-        else if (FileExist(A_AppDataCommon "\Path of Building\Launch.lua"))
-            pobPath := A_AppDataCommon "\Path of Building"
-        else
-            MsgBox % A_AppDataCommon "\Path of Building\Launch.lua"
+
+        ; Check we got good values
+        if (!InStr(FileExist(pobPath), "D") or !InStr(FileExist(pobInstall), "D")) {
+            MsgBox, % "Unable to find correct directories for Path of Building :("
+            ExitApp, 1
+        }
+
+        IniWrite, %pobInstall%, %_IniFile%, General, PathToPoBInstall
         IniWrite, %pobPath%, %_IniFile%, General, PathToPoB
 
         DisplayInformation()
@@ -332,7 +355,13 @@ SortArray(array, order := "A") {
 ;--------------------------------------------------
 ; GUI Display Functions
 ;--------------------------------------------------
-DisplayInformation(string := "") {
+Display(byRef msg) {
+    DisplayInformation(msg)
+    Sleep, 3000
+    DisplayInformation()
+}
+
+DisplayInformation(byRef string := "") {
     ; Hide the Information Window
     if (string = "") {
         Gui, _Info:Hide
