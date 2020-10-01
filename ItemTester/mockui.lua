@@ -100,13 +100,13 @@ function GetTime()
     return 0
 end
 function GetScriptPath()
-    return "."
+    return os.getenv('POB_SCRIPTPATH')
 end
 function GetRuntimePath()
-    return "."
+    return os.getenv('POB_RUNTIMEPATH')
 end
 function GetUserPath()
-    return os.getenv("AppData")
+    return os.getenv('POB_USERPATH')
 end
 function MakeDir(path) end
 function RemoveDir(path) end

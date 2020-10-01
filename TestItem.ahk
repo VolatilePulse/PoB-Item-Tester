@@ -166,10 +166,14 @@ SetVariablesAndFiles(byRef luaDir, byRef pobInstall, byRef pobPath, byRef buildD
     SetWorkingDir, %pobPath%
 
     luaDir := A_ScriptDir . luaDir
+    userDocs := A_MyDocuments
     EnvGet, curPATH, PATH
     EnvSet, PATH, %pobInstall%;%curPATH%
     EnvSet, LUA_PATH, %luaDir%\?.lua;%pobPath%\lua\?.lua;%pobInstall%\lua\?.lua
     EnvSet, LUA_CPATH, %pobInstall%\?.dll
+    EnvSet, POB_SCRIPTPATH, %pobPath%
+    EnvSet, POB_RUNTIMEPATH, %pobInstall%
+    EnvSet, POB_USERPATH, %userDocs%
 
     ; Make sure the Character file still exists
     if (fileName <> "CURRENT" and !(fileName and FileExist(buildDir "\" fileName))) {
