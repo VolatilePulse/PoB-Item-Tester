@@ -106,7 +106,7 @@ function GetRuntimePath()
     return "."
 end
 function GetUserPath()
-    return "."
+    return os.getenv("AppData")
 end
 function MakeDir(path) end
 function RemoveDir(path) end
