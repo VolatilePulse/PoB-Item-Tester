@@ -2,6 +2,6 @@
 
 call _testsetup.bat
 
-"%LUAJIT%" %BASEDIR%\ItemTester\SearchDPS.lua %BUILD%
+"%LUAJIT%" "%BASEDIR%\ItemTester\SearchDPS.lua" "%BUILD%"
 
 REM Add OPTIONS on the end to get skill damage stat options

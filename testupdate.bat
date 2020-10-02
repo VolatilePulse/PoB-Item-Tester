@@ -2,4 +2,4 @@
 
 call _testsetup.bat
 
-"%LUAJIT%" %BASEDIR%\ItemTester\UpdateBuild.lua %BUILD%
+"%LUAJIT%" "%BASEDIR%\ItemTester\UpdateBuild.lua" "%BUILD%"
