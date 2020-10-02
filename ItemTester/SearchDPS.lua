@@ -17,7 +17,8 @@ dofile(SCRIPT_PATH.."mockui.lua")
 xml = require("xml")
 json = require("json")
 inspect = require("inspect")
-testercore = require("testercore")
+local testercore = require("testercore")
+local pobinterface = require("pobinterface")
 
 debug = false
 
@@ -131,10 +132,10 @@ end
 testercore.loadBuild(BUILD_XML)
 
 -- Gather chosen skill and part
-local parts = testercore.readBuildInfo()
-local pickedGroupName = parts.pickedGroupName
-local pickedActiveSkillName = parts.pickedActiveSkillName
-local pickedPartName = parts.pickedPartName
+local parts = pobinterface.readSkillSelection()
+local pickedGroupName = parts.group
+local pickedActiveSkillName = parts.name
+local pickedPartName = parts.part
 
 -- Work out a reasonable skill name
 local skillName = pickedGroupName;

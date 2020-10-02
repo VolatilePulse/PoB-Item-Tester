@@ -1,3 +1,12 @@
+HELP = [[
+    Use the AHK script with hotkey Ctrl-Windows-C.
+
+    See testitem.bat for an example of running it directly.
+    Output HTML goes to <input path>.html
+
+    Usage: lua TestItem.lua <build xml> <item path>
+]]
+
 local BUILD_XML = arg[1]
 local INPUT_FILE = arg[2]
 local OUTPUT_FILE = INPUT_FILE..".html"
@@ -15,10 +24,13 @@ hr { margin: 4px -4px 4px -4px; border: none; border-top: #ffff77 solid 2px }
 </style></head><body>
 ]]
 
+
+local testercore = require("testercore")
+local pobinterface = require('pobinterface')
+
 -- Load a specific build file or use the default
-testercore = require("testercore")
 testercore.loadBuild(BUILD_XML)
-testercore.readBuildInfo()
+testercore.showSkills()
 
 -- Load an item from copy data
 local itemText = loadText(INPUT_FILE)
