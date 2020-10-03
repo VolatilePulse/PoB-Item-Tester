@@ -14,10 +14,11 @@ Simply run `TestItem.ahk` to get started.
 
 #### Requirements
 * [Autohotkey v1.1](https://www.autohotkey.com/) is required. Do not install v1.0 or v2.
-* Path of Building is required (supports both the portable and installer versions).
-  * [Path of Building](https://github.com/Openarl/PathOfBuilding) or [Path of Building (Community Fork)](https://github.com/PathOfBuildingCommunity)
+* [[Path of Building (Community Fork)](https://github.com/PathOfBuildingCommunity/PathOfBuilding) is required (supports both the portable and installer versions).
 
-**Note: There have been some issues reported if both the original PoB and the community fork are installed - uninstalling BOTH then reinstalling just the community fork should resolve it. Using portable versions eliminates the chance of this problem.**
+**Note: The original OpenArl version of PoB is no longer supported!**
+
+**Note: There have been some issues reported if both the original PoB *and* the community fork are installed - uninstalling BOTH then reinstalling just the community fork should resolve it. Using portable versions eliminates this problem.**
 
 ## Item Testing
 With the AHK script running...
