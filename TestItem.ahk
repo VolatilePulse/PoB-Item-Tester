@@ -588,3 +588,33 @@ StdoutToVar_CreateProcess(sCmd, sEncoding:="CP0", sDir:="", ByRef nExitCode:=0) 
     DllCall( "CloseHandle",        Ptr,hStdOutRd                     )
     Return sOutput
 }
+
+/*
+
+PoB file behavior and locations
+
+OpenArl's PoB binary is hardcoded to support only local or %ProgramData%/Path of Building launch.lua files
+PoB Community has worked around this by allowing PoB to launch with an additional argument to contain the directory
+    of the lua files, which is typically %ProgramData%/Path of Building Community
+All known version of PoBC use that directory except for the version 1.4.170.8 installer, which opts to unzip all of the
+    files into %AppData%/Path of Building Community (default).
+
+Recent changes made by coldino allow the AHK script to grab the process of the command prompt that launched PoB, read
+    the path to the PoB binary, and get the path (2nd argument) to the lua files
+This change has made it nearly impossible to support the installed version of PoB, however, the portable version
+    should work just fine thanks to the fall back technique of looking for launch.lua locally
+While it may still be possible to support the less popular PoB, the effort doesn't appear to be worth it at this time.
+    We may reconsider if the demand for it is still available, but for the meantime, we will recommend all users switch
+    to the better PoBC version.
+
+A notable issue is that the PoBC installed version cannot run by running the binary directly. This is due to binary
+    being the same exact binary that PoB uses as the source code has not been released. An odd behavior is that if
+    PoB is installed and you attempt to run the PoBC binary, it will launch and work, but will behave exactly like
+    the PoB version, not the PoBC version. This is due to a hard coded path location for the Lua files in the binary,
+    which could explain the PoBC version opting to use a different directory.
+
+This information is just for posterity and is not to serve a purpose more than future information if we decide to
+    revist support for PoB. There may be a possibility that OpenArl releases the source code for the binary so
+    PoBC can create their own binary, but this is unlikely.
+
+*/
