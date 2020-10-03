@@ -25,9 +25,18 @@ local pobinterface = require('pobinterface')
 
 testercore.loadBuild(BUILD_XML)
 
+-- Remember previously selected skill
+local prevSkill = pobinterface.readSkillSelection()
+print("Skill group/gem/part: "..pobinterface.skillString(prevSkill))
+
+-- Update
 print("Importing character changes...")
 pobinterface.updateBuild()
-testercore.showSkills()
+
+-- Restore previously selected skill
+print("After group/gem/part: "..pobinterface.skillString())
+pobinterface.selectSkill(prevSkill)
+print("Fixed group/gem/part: "..pobinterface.skillString())
 
 testercore.saveBuild()
 print("Success")

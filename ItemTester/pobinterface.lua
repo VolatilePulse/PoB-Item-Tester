@@ -35,13 +35,13 @@ end
 function pobinterface.readSkillSelection()
     local pickedGroupIndex = build.mainSocketGroup
     local socketGroup = build.skillsTab.socketGroupList[pickedGroupIndex]
-    local pickedGroupName = socketGroup.displayLabel
-    local pickedActiveSkillIndex = socketGroup.mainActiveSkill
-    local displaySkill = socketGroup.displaySkillList[pickedActiveSkillIndex]
-    local activeEffect = displaySkill.activeEffect
-    local pickedActiveSkillName = activeEffect.grantedEffect.name
-    local pickedPartIndex = activeEffect.grantedEffect.parts and activeEffect.srcInstance.skillPart
-    local pickedPartName = activeEffect.grantedEffect.parts and activeEffect.grantedEffect.parts[pickedPartIndex].name
+    local pickedGroupName = socketGroup and socketGroup.displayLabel
+    local pickedActiveSkillIndex = socketGroup and socketGroup.mainActiveSkill
+    local displaySkill = socketGroup and socketGroup.displaySkillList[pickedActiveSkillIndex]
+    local activeEffect = displaySkill and displaySkill.activeEffect
+    local pickedActiveSkillName = activeEffect and activeEffect.grantedEffect.name
+    local pickedPartIndex = activeEffect and activeEffect.grantedEffect.parts and activeEffect.srcInstance.skillPart
+    local pickedPartName = activeEffect and activeEffect.grantedEffect.parts and activeEffect.grantedEffect.parts[pickedPartIndex].name
 
     return {
         group = pickedGroupName,
@@ -62,52 +62,86 @@ end
 
 
 function pobinterface.skillString(skill)
+    local skill = skill or pobinterface.readSkillSelection()
     return ""..(skill.group or '-').." / "..(skill.name or '-').." / "..(skill.part or '-')
 end
 
 
 function pobinterface.updateBuild()
     -- Update a build from the PoE website automatically, ensuring skills are restored after import
+    print("Pre-update checks...")
 
-    -- Remember chosen skill and part
-    local prevSkill = pobinterface.readSkillSelection()
-    print("Previous skill group/gem/part: "..pobinterface.skillString(prevSkill))
-
-    -- Check we have an account name
-    if not isValidString(build.importTab.controls.accountName.buf) then
-        error("Account name not configured for import")
+    -- Check importing is configured correctly in the build
+    if not isValidString(build.importTab.lastAccountHash) or not isValidString(build.importTab.lastCharacterHash) then
+        error("Update failed: Character must be imported in PoB before it can be automatically updated")
     end
-    -- result.account = build.importTab.controls.accountName.buf
 
-    -- Check we have a character name
-    if not build.importTab.lastCharacterHash or not isValidString(build.importTab.lastCharacterHash:match("%S")) then
-        error("Character name not configured for import")
+    -- Check importing is configured correctly in PoB itself
+    if not isValidString(build.importTab.controls.accountName.buf) then
+        error("Update failed: Account name must be set within PoB before it can be automatically updated")
+    end
+
+    -- Check importer is in the right state
+    if build.importTab.charImportMode ~= "GETACCOUNTNAME" then
+        error("Update failed: Unknown import error - is PoB importing set up correctly?")
+    end
+
+    -- Check account name in the input box actually matches the one configured in the build
+    if common.sha1(build.importTab.controls.accountName.buf) ~= build.importTab.lastAccountHash then
+        error("Update failed: Build comes from an account that is not configired in PoB - character must be imported in PoB before it can be automatically updated")
     end
 
     -- Get character list
+    print("Looking for matching character...")
     build.importTab:DownloadCharacterList()
 
+    -- Get the character PoB selected and check it actually matches the last import hash
+    local char = build.importTab.controls.charSelect.list[build.importTab.controls.charSelect.selIndex]
+    print("Character selected: "..char.char.name)
+    if common.sha1(char.char.name) ~= build.importTab.lastCharacterHash then
+        error("Update failed: Selected character not found - was it deleted or renamed?")
+    end
+
+    -- Check importer is in the right state
+    if build.importTab.charImportMode ~= "SELECTCHAR" then
+        error("Update failed: Import not fully set up on this build")
+    end
+
     -- Import tree and jewels
+    print("Downloading passive tree...")
     build.importTab.controls.charImportTreeClearJewels.state = true
     build.importTab:DownloadPassiveTree()
-    -- print('Status: '..build.importTab.charImportStatus)
+
+    -- Check importer is in the right state
+    if build.importTab.charImportMode ~= "SELECTCHAR" then
+        error("Update failed: Unable to download the passive tree")
+    end
 
     -- Import items and skills
+    print("Downloading items and skills...")
     build.importTab.controls.charImportItemsClearItems.state = true
     build.importTab.controls.charImportItemsClearSkills.state = true
     build.importTab:DownloadItems()
-    -- print('Status: '..build.importTab.charImportStatus)
+
+    -- Check importer is in the right state
+    if build.importTab.charImportMode ~= "SELECTCHAR" then
+        error("Update failed: Unable to download items and skills")
+    end
 
     -- Update skills
+    print("Completing update...")
     build.outputRevision = build.outputRevision + 1
     build.buildFlag = false
     build.calcsTab:BuildOutput()
     build:RefreshStatList()
     build:RefreshSkillSelectControls(build.controls, build.mainSocketGroup, "")
 
-    -- Restore chosen skills
+end
+
+
+function pobinterface.selectSkill(prevSkill)
     local newSkill = pobinterface.readSkillSelection()
-    print("After update skill group/gem/part: "..pobinterface.skillString(newSkill))
+
     local newGroupIndex = build.mainSocketGroup
     socketGroup = build.skillsTab.socketGroupList[newGroupIndex]
     local newGroupName = socketGroup.displayLabel
