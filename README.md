@@ -1,3 +1,7 @@
+```diff
+! Warning: OpenArl's Path of Building will no longer be supported due to difficulties supporting multiple file locations and lack of updates/community interest.
+```
+
 # Path of Building Item Tester ![Discord Banner 3](https://discordapp.com/api/guilds/520831275393613824/widget.png?style=shield)
 AHK and Lua scripts to automate comparing PoE items from in game or trade sites against your current build with the power of PoB - without needing to run it.
 
@@ -12,7 +16,7 @@ Simply run `TestItem.ahk` to get started.
 * [Autohotkey v1.1](https://www.autohotkey.com/) is required. Do not install v1.0 or v2.
 * Path of Building is required (supports both the portable and installer versions).
   * [Path of Building](https://github.com/Openarl/PathOfBuilding) or [Path of Building (Community Fork)](https://github.com/PathOfBuildingCommunity)
-  
+
 **Note: There have been some issues reported if both the original PoB and the community fork are installed - uninstalling BOTH then reinstalling just the community fork should resolve it. Using portable versions eliminates the chance of this problem.**
 
 ## Item Testing
