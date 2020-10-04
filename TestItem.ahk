@@ -199,35 +199,23 @@ GetPoBPath(byRef pobInstall, byRef pobPath) {
             ExitApp, 1
         }
 
-        ; Get the commandline that ran PoB
-        cmdLine := ""
-        WinGet, pid, PID, Path of Building ahk_class SimpleGraphic Class
-        for proc in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process") {
-            if (proc.Name == "Path of Building.exe") {
-                if (cmdLine and cmdLine != proc.Commandline) {
-                    MsgBox, Multiple versions of Path of Building are running - please run only the most recent and try agian
-                    ExitApp, 1
-                }
-                cmdLine := proc.Commandline
-            }
+        ; Look at running PoB's command-line for paths
+        GetPoBPathsFromCommandLine(pobInstall, pobPath)
+
+        ; MsgBox, % pobInstall "`n" pobPath
+
+        ; First verify we got a good pobInstall
+        if (!pobInstall or !IsDir(pobInstall)) {
+            MsgBox, % "Unable to locate Path of Building - please re-launch PoB and this script and try again"
+            ExitApp, 1
         }
 
-        ; Split it into exe and option lua parts (for installed versions)
-        args := DllCall("shlwapi\PathGetArgsW", Str,cmdLine, Str)
-        exe := SubStr(cmdLine, 1, StrLen(cmdLine) - StrLen(args) - 1)
-        DllCall("shlwapi\PathUnquoteSpacesW", Str, exe)
-        DllCall("shlwapi\PathUnquoteSpacesW", Str, args)
+        ; Figure out a good pobPath
+        CalculatePoBPath(pobInstall, pobPath)
 
-        SplitPath, exe,, pobInstall
-        SplitPath, args,, pobPath
-
-        ; Fall back to pobInstall for Launch.lua if there's no pobPath
-        if (!pobPath and FileExist(pobInstall "\Launch.lua"))
-            pobPath := pobInstall
-
-        ; Check we got good values
-        if (!InStr(FileExist(pobPath), "D") or !InStr(FileExist(pobInstall), "D")) {
-            MsgBox, % "Unable to find correct directories for Path of Building :("
+        ; Check we got something usable
+        if (!pobPath or !IsDir(pobPath) or !FileExist(pobPath "\Launch.lua")) {
+            MsgBox, % "Unable to find Path of Building's data directory :( Please report this as a bug with details of your Path of Building setup."
             ExitApp, 1
         }
 
@@ -236,6 +224,67 @@ GetPoBPath(byRef pobInstall, byRef pobPath) {
 
         DisplayInformation()
     }
+}
+
+CalculatePoBPath(ByRef pobInstall, ByRef pobPath) {
+    ; Path may already be good if the full command-line came from the shortcut
+    if (pobPath and FileExist(pobPath "\Launch.lua")) {
+        Display("Detected PoB data from shortcut")
+        return
+    }
+
+    ; Check for portable installs where pobPath can be set to pobInstall
+    if (!pobPath and FileExist(pobInstall "\Launch.lua")) {
+        pobPath := pobInstall
+        Display("Detected PoB data as portable")
+        return
+    }
+
+    ; The old installer would put data in <Drive>:\ProgramData\Path of Building [Community]
+    SplitPath, pobInstall, , , , , drive
+
+    MsgBox, % drive
+
+    pobPath := drive "\ProgramData\Path of Building Community"
+    if (IsDir(pobPath) and FileExist(pobPath "\Launch.lua")) {
+        Display("Detected PoB Community data")
+        return
+    }
+
+    pobPath := drive "\ProgramData\Path of Building"
+    if (IsDir(pobPath) and FileExist(pobPath "\Launch.lua")) {
+        Display("Detected original PoB data")
+        return
+    }
+
+    Display("F")
+    ExitApp, 1
+}
+
+GetPoBPathsFromCommandLine(ByRef pobInstall, ByRef pobPath) {
+    ; Get the commandline that ran PoB
+    cmdLine := ""
+    pobPath := ""
+    pobInstall := ""
+    WinGet, pid, PID, Path of Building ahk_class SimpleGraphic Class
+    for proc in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process") {
+        if (proc.Name == "Path of Building.exe") {
+            if (cmdLine and cmdLine != proc.Commandline) {
+                MsgBox, % "Multiple versions of Path of Building are running - please run only the most recent and try agian"
+                ExitApp, 1
+            }
+            cmdLine := proc.Commandline
+        }
+    }
+
+    ; Split it into exe and option lua parts (for installed versions)
+    args := DllCall("shlwapi\PathGetArgsW", Str,cmdLine, Str)
+    exe := SubStr(cmdLine, 1, StrLen(cmdLine) - StrLen(args) - 1)
+    DllCall("shlwapi\PathUnquoteSpacesW", Str, exe)
+    DllCall("shlwapi\PathUnquoteSpacesW", Str, args)
+
+    SplitPath, exe,, pobInstall
+    SplitPath, args,, pobPath
 }
 
 GetBuildDir(pobInstall, byRef buildDir, force = true) {
@@ -589,32 +638,29 @@ StdoutToVar_CreateProcess(sCmd, sEncoding:="CP0", sDir:="", ByRef nExitCode:=0) 
     Return sOutput
 }
 
+IsDir(dir) {
+    return InStr(FileExist(dir), "D")
+}
+
 /*
 
 PoB file behavior and locations
 
-OpenArl's PoB binary is hardcoded to support only local or %ProgramData%/Path of Building Launch.lua files
-PoB Community has worked around this by allowing PoB to launch with an additional argument to contain the full path
-    of Luanch.lua, which is typically in %ProgramData%/Path of Building Community
-All known version of PoBC use that directory except for the version 1.4.170.8 installer, which opts to unzip all of the
-    files into %AppData%/Path of Building Community (default), so it acts like a portable version.
+OpenArl's `Path of Building.exe` looks for Launch.lua in the following places:
+    * The first passed in argument
+    * The current directory
+    * `%ProgramData%/Path of Building`
 
-Recent changes made by coldino allow the AHK script to grab the location of Launch.lua from the running PoB process
-    via its command-line argument, which come from the shortcut which ran it.
-This change has made it nearly impossible to support the installed original OpenArl version of PoB, however, the
-    portable versionshould work just fine thanks to the fall back technique of looking for Launch.lua locally
-While it may still be possible to support the less popular PoB, the effort doesn't appear to be worth it at this time.
-    We may reconsider if the demand for it is still available, but for the meantime, we will recommend all users switch
-    to the better PoB Comminity fork.
+Path of Building Community Fork also currently uses this exe in its original form as it cannot be recompiled.
 
-A notable issue is that the PoBC installed version cannot run by running the exe directly. This is due to exe
-    being the same exact one that the original PoB uses as the source code has not been released. An odd behavior
-    is that if the original PoB is installed and you attempt to run the PoBC exe directly, it will launch and work,
-    but will behave exactly like the original PoB version, not the PoBC version. This is due to a hard coded path
-    location for the Lua files in the binary, which could explain the PoBC version opting to use a different directory.
+The PoB Community installer in the past has opted for installing into
+    `%Drive%:/ProgramData/Path of Building Community` and requiring the path to be included
+    as an argument to the exe in the progran's shortcut. Launching without the shortcut will fail.
 
-This information is just for posterity and is not to serve a purpose more than future information if we decide to
-    revist support for original PoB. There may be a possibility that OpenArl releases the source code for the binary so
-    PoBC can create their own binary, but this is unlikely.
+As of writing, the current PoB Community installer installs as if it were the portable version (both exe and data)
+    into `%AppData%/Path of Building Community` and no longer requires admin permissions.
+
+Between Community versions 1.4.170.4 and 1.4.170.14 (at least) the installer has randomly switched between these
+    two different approaches, meaning we have to support both.
 
 */
