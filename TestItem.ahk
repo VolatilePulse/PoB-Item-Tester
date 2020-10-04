@@ -202,8 +202,6 @@ GetPoBPath(byRef pobInstall, byRef pobPath) {
         ; Look at running PoB's command-line for paths
         GetPoBPathsFromCommandLine(pobInstall, pobPath)
 
-        ; MsgBox, % pobInstall "`n" pobPath
-
         ; First verify we got a good pobInstall
         if (!pobInstall or !IsDir(pobInstall)) {
             MsgBox, % "Unable to locate Path of Building - please re-launch PoB and this script and try again"
@@ -243,8 +241,6 @@ CalculatePoBPath(ByRef pobInstall, ByRef pobPath) {
     ; The old installer would put data in <Drive>:\ProgramData\Path of Building [Community]
     SplitPath, pobInstall, , , , , drive
 
-    MsgBox, % drive
-
     pobPath := drive "\ProgramData\Path of Building Community"
     if (IsDir(pobPath) and FileExist(pobPath "\Launch.lua")) {
         Display("Detected PoB Community data")
@@ -257,8 +253,8 @@ CalculatePoBPath(ByRef pobInstall, ByRef pobPath) {
         return
     }
 
-    Display("F")
-    ExitApp, 1
+    ; We failed :(
+    pobPath := ""
 }
 
 GetPoBPathsFromCommandLine(ByRef pobInstall, ByRef pobPath) {
