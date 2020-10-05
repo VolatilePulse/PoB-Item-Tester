@@ -32,7 +32,7 @@ Testing items on the official trade site:
 ## Build Update
 With the AHK script running...
 * Press Ctrl-Windows-U and wait a moment.
-* Altneratively, invoking the build picker during item testing (with Ctrl-Windows-Alt-C) will allow you to select "Update build before continuing".
+* Alteratively, invoking the build picker during item testing (with Ctrl-Windows-Alt-C) will allow you to select "Update build before continuing".
 * The script will re-import your build from pathofexile.com, using the existing import settings in Path of Building.
 * **Beware! This will overwrite local changes to your build.**
 

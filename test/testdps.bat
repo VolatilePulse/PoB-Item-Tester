@@ -1,6 +1,6 @@
 @echo off
 
-call _testsetup.bat
+call test/_testsetup.bat
 
 "%LUAJIT%" "%BASEDIR%\ItemTester\SearchDPS.lua" "%BUILD%"
 
