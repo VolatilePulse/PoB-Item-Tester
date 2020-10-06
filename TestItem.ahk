@@ -23,11 +23,15 @@ global _CP, _CPHwnd, _CPCurrent, _CPDir, _CPTV, _CPUpdate, _CPChange, _CPOK
 ; Item Viewer variables
 global _Item, _ItemHwnd, _ItemText
 
+global MODSURL := "https://raw.githubusercontent.com/VolatilePulse/PoB-Item-Tester/master/ItemTester/mods.json"
+
 DetectHiddenWindows, On
 
 CreateGUI()
 SetVariablesAndFiles(_LuaDir, _PobInstall, _PoBPath, _BuildDir, _CharacterFileName)
 InsertTrayMenuItems()
+
+UpdateModData()
 
 Display("PoB Item Tester Loaded!")
 
@@ -557,6 +561,45 @@ DisplayOutput() {
     posX := ((mouseX > (winX + winW / 2)) ? (winX + winW * 0.25 - guiW * 0.5) : (winX + winW * 0.75 - guiW * 0.5))
     posY := ((mouseY > (winY + winH / 2)) ? (winY + winH * 0.25 - guiH * 0.5) : (winY + winH * 0.75 - guiH * 0.5))
     Gui, _Item:Show, w400 h500 X%posX% Y%posY% NoActivate
+}
+
+UpdateModData() {
+    OldEtag := ""
+    FileRead, OldEtag, % "ItemTester\mods.json.version" ; ignores errors
+
+    ; Begin a request for mods.json but only if the Etag doesn't match what we have
+    global modsJsonReq
+    modsJsonReq := ComObjCreate("Msxml2.XMLHTTP")
+    modsJsonReq.open("GET", MODSURL, False)
+    modsJsonReq.setRequestHeader("User-Agent", "VolatilePulse-PoBItemTester-updater")
+    modsJsonReq.setRequestHeader("If-None-Match", OldEtag)
+    modsJsonReq.onreadystatechange := Func("ReceiveModsJson")
+    modsJsonReq.send()
+}
+
+ReceiveModsJson() {
+    global modsJsonReq
+
+    if (modsJsonReq.readyState != 4)  ; Not done yet.
+        return
+
+    statusN := modsJsonReq.status
+
+    if (statusN >= 200 and statusN < 300) {
+        ; New file version has been downloaded
+        FileDelete, % A_ScriptDir "\ItemTester\mods.json"
+        FileAppend, % modsJsonReq.responseText, % A_ScriptDir "\ItemTester\mods.json"
+
+        ; Update version file with ETag
+        NewEtag := modsJsonReq.getResponseHeader("ETag")
+        FileDelete, % A_ScriptDir "\ItemTester\mods.json.version"
+        FileAppend, % NewEtag, % A_ScriptDir "\ItemTester\mods.json.version"
+    } else if (statusN == 304) {
+        ; Not modified - do nothing
+    } else {
+        ; Failed :(
+        Display("Failed to fetch latest mod data :(")
+    }
 }
 
 ExitFunc() {
