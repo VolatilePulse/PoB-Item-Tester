@@ -56,8 +56,13 @@ function findModEffect(modLine, statField, actorType)
     local testNode = {id="temporary-test-node", type="Socket", alloc=false, sd={"Temp Test Socket"}, modList={}}
 
     -- Construct jewel with the mod just to use its mods in the passive node
-    local itemText = "Test Jewel\nMurderous Eye Jewel\n"..modLine
-    local item = new("Item", build.targetVersion, itemText)
+    local itemText = "Test Jewel\nCobalt Jewel\n"..modLine
+    local item
+    if build.targetVersionData then -- handle code changes in 1.4.170.17
+        item = new("Item", build.targetVersion, itemText)
+    else
+        item = new("Item", itemText)
+    end
     testNode.modList = item.modList
 
     -- Calculate stat differences

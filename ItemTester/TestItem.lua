@@ -34,7 +34,12 @@ testercore.showSkills()
 
 -- Load an item from copy data
 local itemText = loadText(INPUT_FILE)
-local newItem = new("Item", build.targetVersion, itemText)
+local newItem
+if build.targetVersionData then -- handle code format changes in 1.4.170.17
+    newItem = new("Item", build.targetVersion, itemText)
+else
+    newItem = new("Item", itemText)
+end
 
 if newItem.base then
 	newItem:NormaliseQuality() -- Set to top quality
@@ -52,7 +57,11 @@ if newItem.base then
 			outFile:write(txt.."\n");
 		end
 		outFile:close()
-	end
+    end
+
+    print("Results output to: "..OUTPUT_FILE)
+else
+    print("ERROR: Unknown error calculating item")
+    os.exit(1)
 end
 
-print("Results output to: "..OUTPUT_FILE)
