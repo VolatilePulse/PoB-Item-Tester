@@ -4,7 +4,7 @@ set BASEDIR=%CD%
 
 REM Ini reading
 for /F "tokens=1,2 delims==" %%A IN ('"type %BASEDIR%\TestItem.ini"') do set "%%A=%%B"
-if %CharacterBuildFileName%==CURRENT (
+if "%CharacterBuildFileName%"==CURRENT (
     set BUILD=CURRENT
 ) else (
     set "BUILD=%BuildDirectory%\%CharacterBuildFileName%"
