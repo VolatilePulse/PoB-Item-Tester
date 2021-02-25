@@ -170,13 +170,23 @@ if actorType then
 end
 
 -- Get DPS difference for each mod
--- url = 'http://gw2crafts.net/pobsearch/modsearch.html?'
 url = 'https://xanthics.github.io/PoE_Weighted_Search/?'
+modsVersion = modData[1].version
+if modsVersion == nil then
+    print("ERROR: mods.json needs updating")
+    os.exit(2)
+end
+url = url .. "vals=" .. modsVersion .. ","
 for _,mod in ipairs(modData) do
     local dps = findModEffect(mod.desc, statField, actorType)
     if debug then print('  ' .. mod.desc .. ' = ' .. dps) end
-    if dps >= 0.05 or dps <= -0.05 then url = url .. string.format("%s=%.1f&", urlencode(mod.name), dps) end
+    if dps >= 0.05 or dps <= -0.05 then
+        url = url .. string.format("%.1f,", dps)
+    else
+        url = url .. ","
+    end
 end
+url = url:match("(.-),*$") .. "&"
 
 if debug then
     -- print("Stats:")
