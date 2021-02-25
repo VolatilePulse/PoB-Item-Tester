@@ -230,6 +230,7 @@ for skillType,_ in pairs(actor.mainSkill.skillTypes) do
         end
     end
 end
+if actor.mainSkill.skillFlags.brand then flags['Brand'] = true end
 if actor.mainSkill.skillFlags.totem then flags['Totem'] = true end
 if actor.mainSkill.skillFlags.trap then flags['Trap'] = true end
 if actor.mainSkill.skillFlags.mine then flags['Mine'] = true end
@@ -244,17 +245,24 @@ if actor.itemList["Weapon 2"] then extractWeaponFlags(env, actor.weaponData2, fl
 if flags["Spell"] then flags["Melee"] = nil end
 
 -- Grab config flags
-for flag,_ in pairs(env.configInput) do
-    if not flag:match("override") then
+for flag,value in pairs(env.configInput) do
+    if value == true and not flag:match("override") then
         flags[flag] = true
     end
 end
+if env.configInput['enemyIsBoss'] then flags['enemyIsBoss'] = true end
+if env.configInput['ImpaleStacks'] then flags['ImpaleStacks'] = env.configInput['ImpaleStacks'] end
 if baseStats["LifeUnreservedPercent"] and baseStats["LifeUnreservedPercent"] < 35 then flags["conditionLowLife"] = true end
 
 -- Work out how many charges we have
-values["FrenzyCount"] = getCharges("Frenzy", actor.modDB)
-values["PowerCount"] = getCharges("Power", actor.modDB)
-values["EnduranceCount"] = getCharges("Endurance", actor.modDB)
+for flag,value in pairs(flags) do
+    name = flag:match('^use(.+)Charges$')
+    if name then
+        count = getCharges(name, actor.modDB)
+        if count then values[name .. 'Count'] = count end
+        flags[flag] = nil
+    end
+end
 
 -- Infer some extra flags from what we already have
 if flags.Fire or flags.Cold or flags.Lightning then flags.Elemental = true end
@@ -272,7 +280,9 @@ end
 if debug then print('\nPost flags:') end
 local flagsString = 'Flags='
 for flag,value in pairs(flags) do
-    if value then flagsString = flagsString..urlencode(flag:gsub(' ','')).."," end
+    flag = flag:gsub('^condition', '')
+    flag = flag:gsub(' ', '')
+    if value then flagsString = flagsString..urlencode(flag).."," end
     if debug then print('  '..flag) end
 end
 url = url..flagsString.."&"
