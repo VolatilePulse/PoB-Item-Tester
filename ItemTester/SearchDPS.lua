@@ -20,7 +20,7 @@ inspect = require("inspect")
 local testercore = require("testercore")
 local pobinterface = require("pobinterface")
 
-debug = true
+debug = false
 
 function findRelevantStat(activeEffect, chosenField)
     local calcFunc, stats = build.calcsTab:GetMiscCalculator()
