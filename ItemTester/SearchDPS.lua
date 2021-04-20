@@ -232,6 +232,8 @@ for skillType,_ in pairs(actor.mainSkill.skillTypes) do
                 name = nil
             elseif name == "Instant" then
                 name = nil
+            elseif name == "SecondWindSupport" then
+                name = nil
             elseif name:match(".+Skill") or name:match(".+Spell") then
                 name = name:sub(0, #name-5)
             elseif name:match("Causes.+") then
