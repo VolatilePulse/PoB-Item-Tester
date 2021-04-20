@@ -140,29 +140,8 @@ end
 -- Load a specific build file or use the default
 testercore.loadBuild(BUILD_XML)
 
--- Gather chosen skill and part
-local parts = pobinterface.readSkillSelection()
-local pickedGroupName = parts.group
-local pickedActiveSkillName = parts.name
-local pickedPartName = parts.part
-
--- Work out a reasonable skill name
-local skillName = pickedGroupName;
-if (pickedGroupName ~= pickedActiveSkillName) then
-    skillName = skillName.." / "..pickedActiveSkillName
-end
-if (pickedPartName) then
-    skillName = skillName.." / "..pickedPartName
-end
-
-print("Using skill name: "..skillName)
-
 -- Work out which field to use to report damage: Full DPS / CombinedDPS / AverageHit
 local actorType,statField = findRelevantStat(activeEffect, arg[2])
-print()
-print("Using stat: " .. statField)
-print("Using actor: " .. (actorType or 'Player'))
-print()
 
 -- Setup the main actor for gathering data
 local calcFunc, baseStats = build.calcsTab:GetMiscCalculator()
@@ -170,8 +149,38 @@ local env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
 local actor = env.player
 
 if actorType then
+    print("SWITCHING ACTOR: " .. actorType)
     baseStats = baseStats[actorType]
 end
+
+-- Work out a reasonable skill name
+local skillName = "<unknown>"
+if statField == "FullDPS" then
+    -- List all skills included in Full DPS
+    skillName = ""
+    for i,skill in pairs(baseStats.SkillDPS) do
+        skillName = skillName .. " + " .. skill.name
+    end
+    skillName = skillName:sub(4)
+else
+    -- Gather currently selected skill and part
+    local parts = pobinterface.readSkillSelection()
+    local pickedGroupName = parts.group
+    local pickedActiveSkillName = parts.name
+    skillName = pickedGroupName;
+    if (pickedGroupName ~= pickedActiveSkillName) then
+        skillName = skillName.." / "..pickedActiveSkillName
+    end
+    if (pickedPartName) then
+        skillName = skillName.." / "..parts.part
+    end
+end
+
+print()
+print("Using stat: " .. statField)
+print("Using actor: " .. (actorType or 'Player'))
+print("Using skill(s): " .. skillName)
+print()
 
 -- Get DPS difference for each mod
 url = 'https://xanthics.github.io/PoE_Weighted_Search/?'
