@@ -1,5 +1,5 @@
 [
-  {"name": "aspellsg", "desc": "+1 to Level of all Spell Skill Gems", "count": 1, "version":  2},
+  {"name": "aspellsg", "desc": "+1 to Level of all Spell Skill Gems", "count": 1, "version":  3},
   {"name": "adexsg", "desc": "+1 to Level of all Dexterity Skill Gems", "count": 1},
   {"name": "astrsg", "desc": "+1 to Level of all Strength Skill Gems", "count": 1},
   {"name": "aintsg", "desc": "+1 to Level of all Intelligence Skill Gems", "count": 1},
@@ -9,6 +9,7 @@
   {"name": "afiresg", "desc": "+1 to Level of all Fire Skill Gems", "count": 1},
   {"name": "alightningsg", "desc": "+1 to Level of all Lightning Skill Gems", "count": 1},
   {"name": "aphysicalsg", "desc": "+1 to Level of all Physical Skill Gems", "count": 1},
+  {"name": "avaalsg", "desc": "+1 to Level of all Vaal Skill Gems", "count": 1},
   {"name": "perfectcull", "desc": "Culling Strike", "count": 1},
   {"name": "pphysical", "desc": "12% increased Physical Damage", "count": 12},
   {"name": "plightning", "desc": "12% increased Lightning Damage", "count": 12},
@@ -84,6 +85,8 @@
   {"name": "minionflataccuracy", "desc": "Minions have +100 to Accuracy Rating", "count": 100},
   {"name": "minionpaccuracy", "desc": "10% increased Minion Accuracy Rating", "count": 10},
   {"name": "pdot", "desc": "12% increased Damage over Time", "count": 12},
+  {"name": "pchaosdot", "desc": "12% increased Chaos Damage over Time", "count": 12},
+  {"name": "pphysdot", "desc": "12% increased Physical Damage over Time", "count": 12},
   {"name": "pdotailment", "desc": "12% increased Damage with Ailments", "count": 12},
   {"name": "pbleed", "desc": "12% increased Damage with Bleeding", "count": 12},
   {"name": "ppoison", "desc": "12% increased Damage with Poison", "count": 12},
