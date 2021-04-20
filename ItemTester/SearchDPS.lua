@@ -20,18 +20,20 @@ inspect = require("inspect")
 local testercore = require("testercore")
 local pobinterface = require("pobinterface")
 
-debug = false
+debug = true
 
 function findRelevantStat(activeEffect, chosenField)
     local calcFunc, stats = build.calcsTab:GetMiscCalculator()
 
-    actorType = nil
-    if stats['Minion'] then
-        actorType = 'Minion'
-    end
+    if stats.FullDPS ~= 0 then
+        actorType = nil
+        if stats['Minion'] then
+            actorType = 'Minion'
+        end
 
-    if actorType then
-        stats = stats[actorType]
+        if actorType then
+            stats = stats[actorType]
+        end
     end
 
     if chosenField and chosenField == "OPTIONS" then -- show stat list
@@ -45,8 +47,10 @@ function findRelevantStat(activeEffect, chosenField)
         os.exit(1)
     end
 
-    if stats['CombinedDPS'] then return actorType,'CombinedDPS' end
-    if stats['AverageHit'] then return actorType,'AverageHit' end
+    if stats['FullDPS'] ~= 0 then return actorType,'FullDPS' end
+    if stats['CombinedDPS'] ~= 0 then return actorType,'CombinedDPS' end
+    if stats['AverageHit'] ~= 0 then return actorType,'AverageHit' end
+    if stats['TotalDotDPS'] ~= 0 then return actorType,'TotalDotDPS' end
     print("ERROR: Don't know how to deal with this build's damage output type")
     os.exit(1)
 end
@@ -153,7 +157,7 @@ end
 
 print("Using skill name: "..skillName)
 
--- Work out which field to use to report damage: CombinedDPS / AverageHit
+-- Work out which field to use to report damage: Full DPS / CombinedDPS / AverageHit
 local actorType,statField = findRelevantStat(activeEffect, arg[2])
 print()
 print("Using stat: " .. statField)

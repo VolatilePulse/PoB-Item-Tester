@@ -229,6 +229,7 @@ end
 
 -- The build module; once a build is loaded, you can find all the good stuff in here
 build = mainObject.main.modes["BUILD"]
+calcs = build.calcsTab.calcs
 
 -- Here's some helpful helper functions to help you get started
 function newBuild()
