@@ -25,13 +25,15 @@ debug = false
 function findRelevantStat(activeEffect, chosenField)
     local calcFunc, stats = build.calcsTab:GetMiscCalculator()
 
-    actorType = nil
-    if stats['Minion'] then
-        actorType = 'Minion'
-    end
+    if stats.FullDPS ~= 0 then
+        actorType = nil
+        if stats['Minion'] then
+            actorType = 'Minion'
+        end
 
-    if actorType then
-        stats = stats[actorType]
+        if actorType then
+            stats = stats[actorType]
+        end
     end
 
     if chosenField and chosenField == "OPTIONS" then -- show stat list
@@ -45,8 +47,10 @@ function findRelevantStat(activeEffect, chosenField)
         os.exit(1)
     end
 
-    if stats['CombinedDPS'] then return actorType,'CombinedDPS' end
-    if stats['AverageHit'] then return actorType,'AverageHit' end
+    if stats['FullDPS'] ~= 0 then return actorType,'FullDPS' end
+    if stats['CombinedDPS'] ~= 0 then return actorType,'CombinedDPS' end
+    if stats['AverageHit'] ~= 0 then return actorType,'AverageHit' end
+    if stats['TotalDotDPS'] ~= 0 then return actorType,'TotalDotDPS' end
     print("ERROR: Don't know how to deal with this build's damage output type")
     os.exit(1)
 end
@@ -136,29 +140,8 @@ end
 -- Load a specific build file or use the default
 testercore.loadBuild(BUILD_XML)
 
--- Gather chosen skill and part
-local parts = pobinterface.readSkillSelection()
-local pickedGroupName = parts.group
-local pickedActiveSkillName = parts.name
-local pickedPartName = parts.part
-
--- Work out a reasonable skill name
-local skillName = pickedGroupName;
-if (pickedGroupName ~= pickedActiveSkillName) then
-    skillName = skillName.." / "..pickedActiveSkillName
-end
-if (pickedPartName) then
-    skillName = skillName.." / "..pickedPartName
-end
-
-print("Using skill name: "..skillName)
-
--- Work out which field to use to report damage: CombinedDPS / AverageHit
+-- Work out which field to use to report damage: Full DPS / CombinedDPS / AverageHit
 local actorType,statField = findRelevantStat(activeEffect, arg[2])
-print()
-print("Using stat: " .. statField)
-print("Using actor: " .. (actorType or 'Player'))
-print()
 
 -- Setup the main actor for gathering data
 local calcFunc, baseStats = build.calcsTab:GetMiscCalculator()
@@ -166,17 +149,57 @@ local env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
 local actor = env.player
 
 if actorType then
+    print("SWITCHING ACTOR: " .. actorType)
     baseStats = baseStats[actorType]
 end
 
+-- Work out a reasonable skill name
+local skillName = "<unknown>"
+if statField == "FullDPS" then
+    -- List all skills included in Full DPS
+    skillName = ""
+    for i,skill in pairs(baseStats.SkillDPS) do
+        skillName = skillName .. " + " .. skill.name
+    end
+    skillName = skillName:sub(4)
+else
+    -- Gather currently selected skill and part
+    local parts = pobinterface.readSkillSelection()
+    local pickedGroupName = parts.group
+    local pickedActiveSkillName = parts.name
+    skillName = pickedGroupName;
+    if (pickedGroupName ~= pickedActiveSkillName) then
+        skillName = skillName.." / "..pickedActiveSkillName
+    end
+    if (pickedPartName) then
+        skillName = skillName.." / "..parts.part
+    end
+end
+
+print()
+print("Using stat: " .. statField)
+print("Using actor: " .. (actorType or 'Player'))
+print("Using skill(s): " .. skillName)
+print()
+
 -- Get DPS difference for each mod
--- url = 'http://gw2crafts.net/pobsearch/modsearch.html?'
 url = 'https://xanthics.github.io/PoE_Weighted_Search/?'
+modsVersion = modData[1].version
+if modsVersion == nil then
+    print("ERROR: mods.json needs updating")
+    os.exit(2)
+end
+url = url .. "vals=" .. modsVersion .. ","
 for _,mod in ipairs(modData) do
     local dps = findModEffect(mod.desc, statField, actorType)
     if debug then print('  ' .. mod.desc .. ' = ' .. dps) end
-    if dps >= 0.05 or dps <= -0.05 then url = url .. string.format("%s=%.1f&", urlencode(mod.name), dps) end
+    if dps >= 0.05 or dps <= -0.05 then
+        url = url .. string.format("%.1f,", dps)
+    else
+        url = url .. ","
+    end
 end
+url = url:match("(.-),*$") .. "&"
 
 if debug then
     -- print("Stats:")
@@ -209,6 +232,8 @@ for skillType,_ in pairs(actor.mainSkill.skillTypes) do
                 name = nil
             elseif name == "Instant" then
                 name = nil
+            elseif name == "SecondWindSupport" then
+                name = nil
             elseif name:match(".+Skill") or name:match(".+Spell") then
                 name = name:sub(0, #name-5)
             elseif name:match("Causes.+") then
@@ -220,6 +245,7 @@ for skillType,_ in pairs(actor.mainSkill.skillTypes) do
         end
     end
 end
+if actor.mainSkill.skillFlags.brand then flags['Brand'] = true end
 if actor.mainSkill.skillFlags.totem then flags['Totem'] = true end
 if actor.mainSkill.skillFlags.trap then flags['Trap'] = true end
 if actor.mainSkill.skillFlags.mine then flags['Mine'] = true end
@@ -234,17 +260,24 @@ if actor.itemList["Weapon 2"] then extractWeaponFlags(env, actor.weaponData2, fl
 if flags["Spell"] then flags["Melee"] = nil end
 
 -- Grab config flags
-for flag,_ in pairs(env.configInput) do
-    if not flag:match("override") then
+for flag,value in pairs(env.configInput) do
+    if value == true and not flag:match("override") then
         flags[flag] = true
     end
 end
+if env.configInput['enemyIsBoss'] then flags['enemyIsBoss'] = true end
+if env.configInput['ImpaleStacks'] then flags['ImpaleStacks'] = env.configInput['ImpaleStacks'] end
 if baseStats["LifeUnreservedPercent"] and baseStats["LifeUnreservedPercent"] < 35 then flags["conditionLowLife"] = true end
 
 -- Work out how many charges we have
-values["FrenzyCount"] = getCharges("Frenzy", actor.modDB)
-values["PowerCount"] = getCharges("Power", actor.modDB)
-values["EnduranceCount"] = getCharges("Endurance", actor.modDB)
+for flag,value in pairs(flags) do
+    name = flag:match('^use(.+)Charges$')
+    if name then
+        count = getCharges(name, actor.modDB)
+        if count then values[name .. 'Count'] = count end
+        flags[flag] = nil
+    end
+end
 
 -- Infer some extra flags from what we already have
 if flags.Fire or flags.Cold or flags.Lightning then flags.Elemental = true end
@@ -262,7 +295,9 @@ end
 if debug then print('\nPost flags:') end
 local flagsString = 'Flags='
 for flag,value in pairs(flags) do
-    if value then flagsString = flagsString..urlencode(flag:gsub(' ','')).."," end
+    flag = flag:gsub('^condition', '')
+    flag = flag:gsub(' ', '')
+    if value then flagsString = flagsString..urlencode(flag).."," end
     if debug then print('  '..flag) end
 end
 url = url..flagsString.."&"
