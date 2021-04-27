@@ -149,6 +149,9 @@ function pobinterface.selectSkill(prevSkill)
 
     local newGroupIndex = build.mainSocketGroup
     socketGroup = build.skillsTab.socketGroupList[newGroupIndex]
+    if socketGroup == nil then
+        error("ERROR: Either no skill selected or PoB must be reinstalled with a recent installer")
+    end
     local newGroupName = socketGroup.displayLabel
 
     if newGroupName ~= prevSkill.group then
