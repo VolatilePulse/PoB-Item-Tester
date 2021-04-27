@@ -25,8 +25,8 @@ debug = false
 function findRelevantStat(activeEffect, chosenField)
     local calcFunc, stats = build.calcsTab:GetMiscCalculator()
 
-    if stats.FullDPS ~= 0 then
-        actorType = nil
+    local actorType = nil
+    if stats.FullDPS == nil or stats.FullDPS == 0 then
         if stats['Minion'] then
             actorType = 'Minion'
         end
@@ -148,7 +148,7 @@ local calcFunc, baseStats = build.calcsTab:GetMiscCalculator()
 local env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
 local actor = env.player
 
-if actorType then
+if actorType and statField ~= "FullDPS" then
     print("SWITCHING ACTOR: " .. actorType)
     baseStats = baseStats[actorType]
 end
