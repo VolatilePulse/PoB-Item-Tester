@@ -229,6 +229,9 @@ end
 
 -- The build module; once a build is loaded, you can find all the good stuff in here
 build = mainObject.main.modes["BUILD"]
+if build.calcsTab == nil then
+    error("ERROR: Path of Building must be re-installed using a recent installer.")
+end
 calcs = build.calcsTab.calcs
 
 -- Here's some helpful helper functions to help you get started
