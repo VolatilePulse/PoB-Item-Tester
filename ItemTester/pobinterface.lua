@@ -40,6 +40,9 @@ end
 function pobinterface.readSkillSelection()
     local pickedGroupIndex = build.mainSocketGroup
     local socketGroup = build.skillsTab.socketGroupList[pickedGroupIndex]
+    if socketGroup == nil then
+        error("ERROR: Do you have a skill selected? If so, you might need to update PoB using a recently downloaded installer.")
+    end
     local pickedGroupName = socketGroup and socketGroup.displayLabel
     local pickedActiveSkillIndex = socketGroup and socketGroup.mainActiveSkill
     local displaySkill = socketGroup and socketGroup.displaySkillList[pickedActiveSkillIndex]
