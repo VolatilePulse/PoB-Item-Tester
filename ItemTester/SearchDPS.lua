@@ -140,6 +140,11 @@ end
 -- Load a specific build file or use the default
 testercore.loadBuild(BUILD_XML)
 
+-- Check for bad PoB installs
+if not build.calcsTab then
+    error("ERROR: Unexpected error - you might need to re-install a freshly downloaded copy of Path of Building")
+end
+
 -- Work out which field to use to report damage: Full DPS / CombinedDPS / AverageHit
 local actorType,statField = findRelevantStat(activeEffect, arg[2])
 

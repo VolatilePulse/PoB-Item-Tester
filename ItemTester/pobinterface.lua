@@ -6,10 +6,6 @@
 
 local pobinterface = {}
 
-if calcs == nil or calcs.calcFullDPS == nil then
-    error("Path of Building Community 2.0.0 minimum required")
-end
-
 if GlobalCache then GlobalCache.useFullDPS = true end
 
 function pobinterface.loadBuild(path)
