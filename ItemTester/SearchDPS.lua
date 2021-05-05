@@ -154,7 +154,6 @@ local env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
 local actor = env.player
 
 if actorType and statField ~= "FullDPS" then
-    print("SWITCHING ACTOR: " .. actorType)
     baseStats = baseStats[actorType]
 end
 
