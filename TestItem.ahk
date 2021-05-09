@@ -229,16 +229,21 @@ GetPoBPath(byRef pobInstall, byRef pobPath) {
 }
 
 CalculatePoBPath(ByRef pobInstall, ByRef pobPath) {
-    ; Path may already be good if the full command-line came from the shortcut
-    if (pobPath and FileExist(pobPath "\Launch.lua")) {
-        Display("Detected PoB data from shortcut")
-        return
-    }
-
     ; Check for portable installs where pobPath can be set to pobInstall
     if (!pobPath and FileExist(pobInstall "\Launch.lua")) {
         pobPath := pobInstall
         Display("Detected PoB data as portable")
+        return
+    }
+
+    ; Split installs are no longer supported due to not parsing command line arguments
+    MsgBox, % "Please uninstall and reinstall the latest version of Path of Building Community"
+            . " and relaunch this script."
+    ExitApp, 1
+
+    ; Path may already be good if the full command-line came from the shortcut
+    if (pobPath and FileExist(pobPath "\Launch.lua")) {
+        Display("Detected PoB data from shortcut")
         return
     }
 
@@ -269,22 +274,15 @@ GetPoBPathsFromCommandLine(ByRef pobInstall, ByRef pobPath) {
     WinGet, pid, PID, Path of Building ahk_class SimpleGraphic Class
     for proc in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process") {
         if (proc.Name == "Path of Building.exe") {
-            if (cmdLine and cmdLine != proc.Commandline) {
+            if (exePath and exePath != proc.ExecutablePath) {
                 MsgBox, % "Multiple versions of Path of Building are running - please run only the most recent and try agian"
                 ExitApp, 1
             }
-            cmdLine := proc.Commandline
+            exePath := proc.ExecutablePath
         }
     }
 
-    ; Split it into exe and option lua parts (for installed versions)
-    args := DllCall("shlwapi\PathGetArgsW", Str,cmdLine, Str)
-    exe := SubStr(cmdLine, 1, StrLen(cmdLine) - StrLen(args) - 1)
-    DllCall("shlwapi\PathUnquoteSpacesW", Str, exe)
-    DllCall("shlwapi\PathUnquoteSpacesW", Str, args)
-
-    SplitPath, exe,, pobInstall
-    SplitPath, args,, pobPath
+    SplitPath, exePath,, pobInstall
 }
 
 GetBuildDir(pobInstall, byRef buildDir, force = true) {
