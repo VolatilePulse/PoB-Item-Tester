@@ -1,5 +1,5 @@
 [
-  {"name": "aspellsg", "desc": "+1 to Level of all Spell Skill Gems", "count": 1, "version":  3},
+  {"name": "aspellsg", "desc": "+1 to Level of all Spell Skill Gems", "count": 1, "version":  4},
   {"name": "adexsg", "desc": "+1 to Level of all Dexterity Skill Gems", "count": 1},
   {"name": "astrsg", "desc": "+1 to Level of all Strength Skill Gems", "count": 1},
   {"name": "aintsg", "desc": "+1 to Level of all Intelligence Skill Gems", "count": 1},
@@ -60,6 +60,7 @@
   {"name": "pdex", "desc": "10% increased Dexterity", "count": 10},
   {"name": "pint", "desc": "10% increased Intelligence", "count": 10},
   {"name": "pstr", "desc": "10% increased Strength", "count": 10},
+  {"name": "ptotemlife", "desc": "7% increased Totem Life", "count": 7},
   {"name": "plife", "desc": "7% increased maximum Life", "count": 7},
   {"name": "flatlife", "desc": "+40 to maximum Life", "count": 40},
   {"name": "pes", "desc": "7% increased maximum Energy Shield", "count": 7},
