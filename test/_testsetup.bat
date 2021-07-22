@@ -15,7 +15,11 @@ for /F "tokens=3" %%G IN ('REG QUERY "HKCU\Software\Microsoft\Windows\CurrentVer
 
 REM Set up the environment
 set "PATH=%PathToPoBInstall%;%PATH%"
-set "LUA_PATH=%BASEDIR%\ItemTester\?.lua;%PathToPoB%\lua\?.lua;%PathToPoBInstall%\lua\?.lua"
+set "LUA_PATH=%BASEDIR%\ItemTester\?.lua"
+set "LUA_PATH=%LUA_PATH%;%PathToPoB%\lua\?.lua"
+set "LUA_PATH=%LUA_PATH%;%PathToPoB%\lua\?\init.lua"
+set "LUA_PATH=%LUA_PATH%;%PathToPoBInstall%\lua\?.lua"
+set "LUA_PATH=%LUA_PATH%;%PathToPoBInstall%\lua\?\init.lua"
 set "LUA_CPATH=%PathToPoBInstall%\?.dll"
 set "LUAJIT=%BASEDIR%\bin\luajit.exe"
 set "POB_SCRIPTPATH=%PathToPoB%"
