@@ -326,7 +326,7 @@ InsertTrayMenuItems() {
 
 GetItemFromClipboard() {
     ; Verify the information is what we're looking for
-    if RegExMatch(clipboard, "(Rarity|Item Class): .*?\R.*?\R?.*?\R--------\R.*") = 0 {
+    if RegExMatch(clipboard, "(Rarity|Item Class): .+?(\r.+?){3,}") = 0 {
         MsgBox % "Not a PoE item"
         return false
     }
