@@ -320,7 +320,7 @@ end
 
 function lineToHtml(txt)
     if txt == nil then return '' end
-	return txt:gsub("^%^7", ""):gsub("%^x(......)", "<span style=\"color:#%1\">"):gsub("%^7", "</span>"):gsub("%^8", "<span style=\"color:gray\">")
+	return txt:gsub("^%^7", ""):gsub("%^x(......)", "<span style=\"color:#%1\">"):gsub("%^7", "</span>"):gsub("%^8", "<span style=\"color:gray\">"):gsub("%^1", "<span style=\"color:red\">")
 end
 
 inspect = require('inspect')
