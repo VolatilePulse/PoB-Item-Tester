@@ -1,5 +1,5 @@
 [
-  {"name": "aspellsg", "desc": "+1 to Level of all Spell Skill Gems", "count": 1, "version":  4},
+  {"name": "aspellsg", "desc": "+1 to Level of all Spell Skill Gems", "count": 1, "version":  5},
   {"name": "adexsg", "desc": "+1 to Level of all Dexterity Skill Gems", "count": 1},
   {"name": "astrsg", "desc": "+1 to Level of all Strength Skill Gems", "count": 1},
   {"name": "aintsg", "desc": "+1 to Level of all Intelligence Skill Gems", "count": 1},
@@ -32,6 +32,7 @@
   {"name": "penlightning", "desc": "Damage Penetrates 8% Lightning Resistance", "count": 8},
   {"name": "pencold", "desc": "Damage Penetrates 8% Cold Resistance", "count": 8},
   {"name": "penfire", "desc": "Damage Penetrates 8% Fire Resistance", "count": 8},
+  {"name": "penchaos", "desc": "Damage Penetrates 8% Chaos Resistance", "count": 8},
   {"name": "opdr", "desc": "Overwhelm 10% Physical Damage Reduction", "count": 10},
   {"name": "flatphys", "desc": "Adds 5 to 7 Physical Damage", "count": 6},
   {"name": "flatlightning", "desc": "Adds 6 to 68 Lightning Damage", "count": 37},
@@ -39,6 +40,7 @@
   {"name": "flatfire", "desc": "Adds 21 to 34 Fire Damage", "count": 27.5},
   {"name": "flatchaos", "desc": "Adds 4 to 7 Chaos Damage", "count": 5.5},
   {"name": "chancedoubledamage", "desc": "1% chance to deal Double Damage", "count": 1},
+  {"name": "chancetripledamage", "desc": "1% chance to deal Triple Damage", "count": 1},
   {"name": "extralightning", "desc": "15% of Physical Damage as Extra Lightning Damage", "count": 15},
   {"name": "extracold", "desc": "15% of Physical Damage as Extra Cold Damage", "count": 15},
   {"name": "extrafire", "desc": "15% of Physical Damage as Extra Fire Damage", "count": 15},
@@ -106,6 +108,7 @@
   {"name": "iaepride", "desc": "Pride has 34% increased Aura Effect", "count": 34},
   {"name": "iaewrath", "desc": "Wrath has 34% increased Aura Effect", "count": 34},
   {"name": "iaezealotry", "desc": "Zealotry has 34% increased Aura Effect", "count": 34},
+  {"name": "iaeenemy", "desc": "20% increased Effect of Non-Curse Auras from your Skills on Enemies", "count": 20},
   {"name": "iaenc", "desc": "20% increased effect of Non-Curse Auras from your Skills", "count": 20},
   {"name": "pdpas", "desc": "Auras from your Skills grant 4% increased Damage to you and Allies", "count": 4}
 ]
