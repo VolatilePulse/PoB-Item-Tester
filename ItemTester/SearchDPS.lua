@@ -23,7 +23,7 @@ local pobinterface = require("pobinterface")
 debug = false
 
 function findRelevantStat(activeEffect, chosenField)
-    local calcFunc, stats = build.calcsTab:GetMiscCalculator()
+    local calcFunc, stats = calcs.getMiscCalculator(build)
 
     local actorType = nil
     if stats.FullDPS == nil or stats.FullDPS == 0 then
@@ -70,7 +70,7 @@ function findModEffect(modLine, statField, actorType)
     testNode.modList = item.modList
 
     -- Calculate stat differences
-    local calcFunc, baseStats = build.calcsTab:GetMiscCalculator()
+    local calcFunc, baseStats = calcs.getMiscCalculator(build)
     local newStats = calcFunc({ addNodes={ [testNode]=true } })
 
     -- Switch to minion/totem stats if needed
@@ -141,7 +141,7 @@ end
 testercore.loadBuild(BUILD_XML)
 
 -- Check for bad PoB installs
-if not build.calcsTab then
+if not build.calcsTab or not calcs then
     error("ERROR: Unexpected error - you might need to re-install a freshly downloaded copy of Path of Building")
 end
 
@@ -149,7 +149,7 @@ end
 local actorType,statField = findRelevantStat(activeEffect, arg[2])
 
 -- Setup the main actor for gathering data
-local calcFunc, baseStats = build.calcsTab:GetMiscCalculator()
+local calcFunc, baseStats = calcs.getMiscCalculator(build)
 local env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
 local actor = env.player
 
