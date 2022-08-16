@@ -150,7 +150,7 @@ local actorType,statField = findRelevantStat(activeEffect, arg[2])
 
 -- Setup the main actor for gathering data
 local calcFunc, baseStats = calcs.getMiscCalculator(build)
-local env = build.calcsTab.calcs.initEnv(build, "CALCULATOR")
+local env = build.calcsTab.calcs.initEnv(build, "MAIN")
 local actor = env.player
 
 if actorType and statField ~= "FullDPS" then
