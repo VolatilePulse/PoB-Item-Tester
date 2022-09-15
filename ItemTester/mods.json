@@ -1,5 +1,5 @@
 [
-  {"name": "aspellsg", "desc": "+1 to Level of all Spell Skill Gems", "count": 1, "version":  7},
+  {"name": "aspellsg", "desc": "+1 to Level of all Spell Skill Gems", "count": 1, "version": 8},
   {"name": "asg", "desc": "+1 to Level of all Skill Gems", "count": 1},
   {"name": "adexsg", "desc": "+1 to Level of all Dexterity Skill Gems", "count": 1},
   {"name": "astrsg", "desc": "+1 to Level of all Strength Skill Gems", "count": 1},
@@ -101,6 +101,11 @@
   {"name": "pfiredotmulti", "desc": "+12% to Fire Damage over Time Multiplier", "count": 12},
   {"name": "pcolddotmulti", "desc": "+12% to Cold Damage over Time Multiplier", "count": 12},
   {"name": "pchaosdotmulti", "desc": "+12% to Chaos Damage over Time Multiplier", "count": 12},
+  {"name": "fasterignite", "desc": "Ignites you inflict deal Damage 10% faster", "count": 10},
+  {"name": "fasterbleed", "desc": "Bleeding you inflict deal Damage 10% faster", "count": 10},
+  {"name": "fasterpoison", "desc": "Poisons you inflict deal Damage 10% faster", "count": 10},
+  {"name": "fasterdot", "desc": "Damaging Ailments deal damage 10% faster", "count": 10},
+  {"name": "longerdot", "desc": "10% increased Duration of Ailments on Enemies", "count": 10},
   {"name": "iaeanger", "desc": "Anger has 34% increased Aura Effect", "count": 34},
   {"name": "iaedeterminaton", "desc": "Determination has 34% increased Aura Effect", "count": 34},
   {"name": "iaediscipline", "desc": "Discipline has 34% increased Aura Effect", "count": 34},
