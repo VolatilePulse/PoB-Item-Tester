@@ -55,7 +55,7 @@ function findRelevantStat(activeEffect, chosenField)
     os.exit(1)
 end
 
-function findModEffect(modLine, statField, actorType)
+function findModEffect(calcFunc, baseStats, modLine, statField, actorType)
     -- Construct an empty passive socket node to test in
     local testNode = {id="temporary-test-node", type="Socket", alloc=false, sd={"Temp Test Socket"}, modList={}}
 
@@ -70,7 +70,6 @@ function findModEffect(modLine, statField, actorType)
     testNode.modList = item.modList
 
     -- Calculate stat differences
-    local calcFunc, baseStats = calcs.getMiscCalculator(build)
     local newStats = calcFunc({ addNodes={ [testNode]=true } })
 
     -- Switch to minion/totem stats if needed
@@ -157,6 +156,11 @@ if actorType and statField ~= "FullDPS" then
     baseStats = baseStats[actorType]
 end
 
+-- Bit of a hack to enable FullDPS to be properly included in the output
+if statField == "FullDPS" then
+    GlobalCache.useFullDPS = true
+end
+
 -- Work out a reasonable skill name
 local skillName = "<unknown>"
 if statField == "FullDPS" then
@@ -195,7 +199,7 @@ if modsVersion == nil then
 end
 url = url .. "vals=" .. modsVersion .. ","
 for _,mod in ipairs(modData) do
-    local dps = findModEffect(mod.desc, statField, actorType)
+    local dps = findModEffect(calcFunc, baseStats, mod.desc, statField, actorType)
     if debug then print('  ' .. mod.desc .. ' = ' .. dps) end
     if dps >= 0.05 or dps <= -0.05 then
         url = url .. string.format("%.1f,", dps)
